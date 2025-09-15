@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Newsletter Subscribers - Dream & Drape Admin{% endblock %}
+
+{% block content %}
+<h2>Manage Newsletter Subscribers</h2>
+<table class="table table-striped table-bordered admin-table selectable">
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Subscribed At</th>
+      <th>Active</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for subscriber in subscribers.items %}
+    <tr data-id="{{ subscriber.id }}">
+      <td>{{ subscriber.email }}</td>
+      <td>{{ subscriber.subscribed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>
+        {% if subscriber.is_active %}
+          <span class="badge bg-success">Yes</span>
+        {% else %}
+          <span class="badge bg-danger">No</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+      <tr><td colspan="3" class="text-center">No subscribers found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<nav aria-label="Subscribers pagination">
+  <ul class="pagination justify-content-center">
+    {% if subscribers.has_prev %}
+      <li class="page-item"><a class="page-link" href="{{ url_for('admin.manage_newsletter', page=subscribers.prev_num) }}">Previous</a></li>
+    {% endif %}
+    {% for p in subscribers.iter_pages() %}
+      {% if p %}
+        <li class="page-item {% if p == subscribers.page %}active{% endif %}"><a class="page-link" href="{{ url_for('admin.manage_newsletter', page=p) }}">{{ p }}</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endfor %}
+    {% if subscribers.has_next %}
+      <li class="page-item"><a class="page-link" href="{{ url_for('admin.manage_newsletter', page=subscribers.next_num) }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endblock %}

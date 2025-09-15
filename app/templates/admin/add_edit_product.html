@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Dream & Drape Admin{% endblock %}
+
+{% block content %}
+<h2>{{ title }}</h2>
+<form method="POST" enctype="multipart/form-data" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="mb-3">
+    {{ form.name.label(class="form-label") }}
+    {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Product Name") }}
+    {% for e in form.name.errors %}
+      <div class="invalid-feedback">{{ e }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.description.label(class="form-label") }}
+    {{ form.description(class="form-control", rows="4", placeholder="Product Description") }}
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-4">
+      {{ form.price.label(class="form-label") }}
+      {{ form.price(class="form-control" + (" is-invalid" if form.price.errors else ""), placeholder="Price") }}
+      {% for e in form.price.errors %}
+        <div class="invalid-feedback">{{ e }}</div>
+      {% endfor %}
+    </div>
+    <div class="col-md-4">
+      {{ form.original_price.label(class="form-label") }}
+      {{ form.original_price(class="form-control", placeholder="Original Price (optional)") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.sku.label(class="form-label") }}
+      {{ form.sku(class="form-control", placeholder="SKU (optional)") }}
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-4">
+      {{ form.stock_quantity.label(class="form-label") }}
+      {{ form.stock_quantity(class="form-control", placeholder="Stock Quantity") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.sizes.label(class="form-label") }}
+      {{ form.sizes(class="form-control", placeholder="Sizes (comma-separated)") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.colors.label(class="form-label") }}
+      {{ form.colors(class="form-control", placeholder="Colors (comma-separated)") }}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {{ form.material.label(class="form-label") }}
+    {{ form.material(class="form-control", placeholder="Material") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.care_instructions.label(class="form-label") }}
+    {{ form.care_instructions(class="form-control", rows="3", placeholder="Care Instructions") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.image_file.label(class="form-label") }}
+    {{ form.image_file(class="form-control") }}
+  </div>
+
+  <div class="form-check mb-3">
+    {{ form.is_featured(class="form-check-input") }}
+    {{ form.is_featured.label(class="form-check-label") }}
+  </div>
+  <div class="form-check mb-3">
+    {{ form.is_new_arrival(class="form-check-input") }}
+    {{ form.is_new_arrival.label(class="form-check-label") }}
+  </div>
+  <div class="form-check mb-3">
+    {{ form.is_best_seller(class="form-check-input") }}
+    {{ form.is_best_seller.label(class="form-check-label") }}
+  </div>
+  <div class="form-check mb-3">
+    {{ form.is_on_sale(class="form-check-input") }}
+    {{ form.is_on_sale.label(class="form-check-label") }}
+  </div>
+  <div class="form-check mb-3">
+    {{ form.is_active(class="form-check-input") }}
+    {{ form.is_active.label(class="form-check-label") }}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save</button>
+  <a href="{{ url_for('admin.manage_products') }}" class="btn btn-secondary ms-2">Cancel</a>
+</form>
+{% endblock %}

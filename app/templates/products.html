@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Products - Dream & Drape{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-title text-center">Our Products</h1>
+            <p class="lead text-center text-muted">Discover our beautiful collection of traditional and contemporary fashion</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-lg-3 col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Filter Products</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET">
+                        <!-- Search -->
+                        <div class="mb-3">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ current_search }}" placeholder="Search products...">
+                        </div>
+                        
+                        <!-- Categories -->
+                        <div class="mb-3">
+                            <label class="form-label">Categories</label>
+                            <div class="list-group">
+                                <a href="{{ url_for('main.products') }}" 
+                                   class="list-group-item list-group-item-action {{ 'active' if not current_category }}">
+                                    All Categories
+                                </a>
+                                {% for category in categories %}
+                                    <a href="{{ url_for('main.products', category=category.name) }}" 
+                                       class="list-group-item list-group-item-action {{ 'active' if current_category == category.name }}">
+                                        {{ category.name }}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Price Range -->
+                        <div class="mb-3">
+                            <label class="form-label">Price Range</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="number" class="form-control" name="min_price" 
+                                           placeholder="Min" value="{{ min_price or '' }}">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" class="form-control" name="max_price" 
+                                           placeholder="Max" value="{{ max_price or '' }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sort By -->
+                        <div class="mb-3">
+                            <label for="sort_by" class="form-label">Sort By</label>
+                            <select class="form-select" name="sort_by" id="sort_by">
+                                <option value="newest" {{ 'selected' if current_sort == 'newest' }}>Newest First</option>
+                                <option value="name_asc" {{ 'selected' if current_sort == 'name_asc' }}>Name A-Z</option>
+                                <option value="name_desc" {{ 'selected' if current_sort == 'name_desc' }}>Name Z-A</option>
+                                <option value="price_asc" {{ 'selected' if current_sort == 'price_asc' }}>Price Low to High</option>
+                                <option value="price_desc" {{ 'selected' if current_sort == 'price_desc' }}>Price High to Low</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                        <a href="{{ url_for('main.products') }}" class="btn btn-outline-secondary w-100 mt-2">Clear Filters</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="col-lg-9 col-md-8">
+            <!-- Results Info -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <p class="mb-0">
+                        Showing {{ products.items|length }} of {{ products.total }} products
+                        {% if current_category %}in {{ current_category }}{% endif %}
+                        {% if current_search %}for "{{ current_search }}"{% endif %}
+                    </p>
+                </div>
+                <div>
+                    <select class="form-select form-select-sm" onchange="location.href=this.value">
+                        <!-- Sort dropdown with explicit URLs -->
+                        <option value="{{ url_for('main.products', category=current_category, search=current_search, min_price=min_price, max_price=max_price, sort_by='newest') }}">Newest First</option>
+                        <option value="{{ url_for('main.products', category=current_category, search=current_search, min_price=min_price, max_price=max_price, sort_by='price_asc') }}">Price Low to High</option>
+                        <option value="{{ url_for('main.products', category=current_category, search=current_search, min_price=min_price, max_price=max_price, sort_by='price_desc') }}">Price High to Low</option>
+                        <option value="{{ url_for('main.products', category=current_category, search=current_search, min_price=min_price, max_price=max_price, sort_by='name_asc') }}">Name A-Z</option>
+                        <option value="{{ url_for('main.products', category=current_category, search=current_search, min_price=min_price, max_price=max_price, sort_by='name_desc') }}">Name Z-A</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Products -->
+            {% if products.items %}
+                <div class="row">
+                    {% for product in products.items %}
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card product-card h-100">
+                                <!-- Product Badges -->
+                                {% if product.is_new_arrival %}
+                                    <span class="product-badge new">New</span>
+                                {% elif product.is_on_sale %}
+                                    <span class="product-badge sale">{{ product.get_discount_percentage() }}% Off</span>
+                                {% elif product.is_best_seller %}
+                                    <span class="product-badge">Bestseller</span>
+                                {% endif %}
+
+                                <!-- Wishlist Button -->
+                                {% if current_user.is_authenticated %}
+                                    <button class="wishlist-btn" onclick="toggleWishlist({{ product.id }})">
+                                        <i class="fas fa-heart"></i>
+                                    </button>
+                                {% endif %}
+
+                                <!-- Product Image -->
+                                {% set placeholder_url = url_for('static', filename='images/placeholder.jpg') %}
+                                <img src="{{ url_for('static', filename='images/products/' + (product.image_url or 'placeholder.jpg')) }}"
+                                     class="card-img-top" alt="{{ product.name }}"
+                                     onerror="this.src='{{ placeholder_url }}'">
+
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title">{{ product.name }}</h5>
+                                    <p class="card-text text-muted flex-grow-1">
+                                        {{ product.description[:100] }}{% if product.description|length > 100 %}...{% endif %}
+                                    </p>
+
+                                    <!-- Price -->
+                                    <div class="price mb-3">
+                                        {% if product.original_price and product.original_price > product.price %}
+                                            <span class="original-price">₹{{ "%.2f"|format(product.original_price) }}</span>
+                                        {% endif %}
+                                        <span class="current-price">₹{{ "%.2f"|format(product.price) }}</span>
+                                        {% if product.get_discount_percentage() > 0 %}
+                                            <span class="discount-badge">{{ product.get_discount_percentage() }}% OFF</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Rating -->
+                                    {% if product.reviews %}
+                                        <div class="rating-stars mb-2">
+                                            {% for i in range(1, 6) %}
+                                                {% if i <= product.get_average_rating() %}
+                                                    <i class="fas fa-star"></i>
+                                                {% else %}
+                                                    <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                            <small class="text-muted">({{ product.reviews|length }} reviews)</small>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Stock Status -->
+                                    {% if product.is_in_stock() %}
+                                        <small class="text-success mb-3"><i class="fas fa-check"></i> In Stock</small>
+                                    {% else %}
+                                        <small class="text-danger mb-3"><i class="fas fa-times"></i> Out of Stock</small>
+                                    {% endif %}
+
+                                    <!-- Action Buttons -->
+                                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                                        <a href="{{ url_for('main.product_detail', id=product.id) }}" class="btn btn-outline-primary">
+                                            View Details
+                                        </a>
+                                        {% if current_user.is_authenticated and product.is_in_stock() %}
+                                            <button class="btn btn-primary btn-sm" onclick="addToCart({{ product.id }}, 1)">
+                                                <i class="fas fa-shopping-cart"></i> Add to Cart
+                                            </button>
+                                        {% elif not current_user.is_authenticated %}
+                                            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-shopping-cart"></i> Add to Cart
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if products.pages > 1 %}
+                    <nav aria-label="Products pagination">
+                        <ul class="pagination justify-content-center">
+                            <!-- Previous -->
+                            {% if products.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.products', page=products.prev_num, category=current_category, search=current_search, min_price=min_price, max_price=max_price, sort_by=current_sort) }}">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            <!-- Page Numbers -->
+                            {% for page_num in products.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != products.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('main.products', page=page_num, category=current_category, search=current_search, min_price=min_price, max_price=max_price, sort_by=current_sort) }}">
+                                                {{ page_num }}
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <!-- Next -->
+                            {% if products.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.products', page=products.next_num, category=current_category, search=current_search, min_price=min_price, max_price=max_price, sort_by=current_sort) }}">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <!-- No Products Found -->
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h4>No products found</h4>
+                    <p class="text-muted">
+                        {% if current_search %}
+                            No products match your search for "{{ current_search }}".
+                        {% else %}
+                            No products available in this category.
+                        {% endif %}
+                    </p>
+                    <a href="{{ url_for('main.products') }}" class="btn btn-primary">
+                        View All Products
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit form on filter changes
+$('#sort_by').change(function() {
+    $(this).closest('form').submit();
+});
+
+// Quick add to cart
+function addToCart(productId, quantity) {
+    if (!{{ 'true' if current_user.is_authenticated else 'false' }}) {
+        window.location.href = '{{ url_for("auth.login") }}';
+        return;
+    }
+
+    $.ajax({
+        url: '{{ url_for("main.add_to_cart") }}',
+        method: 'POST',
+        data: {
+            product_id: productId,
+            quantity: quantity || 1
+        },
+        success: function(response) {
+            showNotification('Product added to cart!', 'success');
+            updateCartCount();
+        },
+        error: function() {
+            showNotification('Error adding product to cart', 'error');
+        }
+    });
+}
+
+// Toggle wishlist
+function toggleWishlist(productId) {
+    $.ajax({
+        url: '/add_to_wishlist/' + productId,
+        method: 'GET',
+        success: function(response) {
+            showNotification('Added to wishlist!', 'success');
+        },
+        error: function() {
+            showNotification('Error adding to wishlist', 'error');
+        }
+    });
+}
+</script>
+{% endblock %}

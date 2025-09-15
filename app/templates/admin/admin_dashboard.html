@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - Dream & Drape{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link id="admin-dark-mode-css" rel="stylesheet" href="" disabled>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // On load, check localStorage for dark mode
+  document.addEventListener('DOMContentLoaded', function() {
+    const darkCss = document.getElementById('admin-dark-mode-css');
+    const isDark = localStorage.getItem('adminDark') === 'true';
+    if (isDark) {
+      darkCss.href = "{{ url_for('static', filename='css/admin-dark.css') }}";
+      darkCss.disabled = false;
+      document.getElementById('darkModeToggle').querySelector('i').classList.replace('fa-moon', 'fa-sun');
+    }
+    // Toggle button event
+    document.getElementById('darkModeToggle').addEventListener('click', function() {
+      const icon = this.querySelector('i');
+      if (darkCss.disabled) {
+        darkCss.href = "{{ url_for('static', filename='css/admin-dark.css') }}";
+        darkCss.disabled = false;
+        localStorage.setItem('adminDark','true');
+        icon.classList.replace('fa-moon', 'fa-sun');
+      } else {
+        darkCss.disabled = true;
+        localStorage.setItem('adminDark','false');
+        icon.classList.replace('fa-sun', 'fa-moon');
+      }
+    });
+  });
+</script>
+{% endblock %}
+{% block content %}
+<div class="admin-wrapper">
+    <!-- Admin Sidebar -->
+    <div class="admin-sidebar">
+        <div class="sidebar-header">
+            <h4>Dream & Drape</h4>
+            <div class="admin-subtitle">Admin Panel</div>
+        </div>
+        
+        <nav class="admin-nav">
+            <div class="nav-item">
+                <a href="{{ url_for('admin.dashboard') }}" class="nav-link active">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="{{ url_for('admin.manage_products') }}" class="nav-link">
+                    <i class="fas fa-box"></i>
+                    <span class="nav-text">Products</span>
+                    <span class="badge">{{ total_products }}</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="{{ url_for('admin.manage_categories') }}" class="nav-link">
+                    <i class="fas fa-tags"></i>
+                    <span class="nav-text">Categories</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="{{ url_for('admin.manage_orders') }}" class="nav-link">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="nav-text">Orders</span>
+                    <span class="badge admin-notification-badge" data-type="pending_orders">{{ pending_orders }}</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="{{ url_for('admin.manage_users') }}" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span class="nav-text">Users</span>
+                    <span class="badge">{{ total_users }}</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="{{ url_for('admin.manage_reviews') }}" class="nav-link">
+                    <i class="fas fa-star"></i>
+                    <span class="nav-text">Reviews</span>
+                    <span class="badge admin-notification-badge" data-type="pending_reviews">{{ pending_reviews }}</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="{{ url_for('admin.manage_messages') }}" class="nav-link">
+                    <i class="fas fa-envelope"></i>
+                    <span class="nav-text">Messages</span>
+                    <span class="badge admin-notification-badge" data-type="unread_messages">{{ unread_messages }}</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="{{ url_for('admin.manage_newsletter') }}" class="nav-link">
+                    <i class="fas fa-mail-bulk"></i>
+                    <span class="nav-text">Newsletter</span>
+                </a>
+            </div>
+            
+            <div class="nav-item mt-4">
+                <a href="{{ url_for('main.index') }}" class="nav-link">
+                    <i class="fas fa-globe"></i>
+                    <span class="nav-text">View Website</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="{{ url_for('auth.logout') }}" class="nav-link">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="nav-text">Logout</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+    
+    <!-- Admin Content -->
+    <div class="admin-content">
+        <!-- Admin Header -->
+        <div class="admin-header">
+            <button class="sidebar-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="header-title">
+                <h1>Dashboard</h1>
+                <nav class="breadcrumb">
+                    <span class="breadcrumb-item">Admin</span>
+                    <span class="breadcrumb-item active">Dashboard</span>
+                </nav>
+            </div>
+            
+            <div class="header-actions">
+                <button id="darkModeToggle" class="btn btn-outline-secondary btn-sm ms-2">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div class="admin-profile-dropdown">
+                    <button class="admin-profile-btn">
+                        <div class="admin-profile-avatar">
+                            {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+                        </div>
+                        <span>{{ current_user.get_full_name() }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Notifications Panel -->
+        <div class="admin-notifications-panel" id="adminNotificationsPanel">
+            <div class="notifications-header">
+                <h6><i class="fas fa-bell"></i> Admin Notifications</h6>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshNotifications()">
+                    <i class="fas fa-sync"></i>
+                </button>
+            </div>
+            <div class="notifications-body">
+                {% if pending_orders > 0 %}
+                <div class="notification-item urgent">
+                    <i class="fas fa-shopping-bag text-warning"></i>
+                    <div class="notification-content">
+                        <strong>{{ pending_orders }} Pending Orders</strong>
+                        <small>Require immediate attention</small>
+                    </div>
+                    <a href="{{ url_for('admin.manage_orders', status='pending') }}" class="btn btn-sm btn-warning">View</a>
+                </div>
+                {% endif %}
+
+                {% if pending_reviews > 0 %}
+                <div class="notification-item">
+                    <i class="fas fa-star text-info"></i>
+                    <div class="notification-content">
+                        <strong>{{ pending_reviews }} Reviews Pending</strong>
+                        <small>Waiting for approval</small>
+                    </div>
+                    <a href="{{ url_for('admin.manage_reviews', status='pending') }}" class="btn btn-sm btn-info">Review</a>
+                </div>
+                {% endif %}
+
+                {% if unread_messages > 0 %}
+                <div class="notification-item">
+                    <i class="fas fa-envelope text-primary"></i>
+                    <div class="notification-content">
+                        <strong>{{ unread_messages }} Unread Messages</strong>
+                        <small>Customer inquiries</small>
+                    </div>
+                    <a href="{{ url_for('admin.manage_messages') }}" class="btn btn-sm btn-primary">Read</a>
+                </div>
+                {% endif %}
+
+                {% if low_stock_products and low_stock_products|length > 0 %}
+                <div class="notification-item urgent">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    <div class="notification-content">
+                        <strong>{{ low_stock_products|length }} Low Stock Items</strong>
+                        <small>Products need restocking</small>
+                    </div>
+                    <a href="{{ url_for('admin.manage_products') }}?filter=low_stock" class="btn btn-sm btn-danger">Check</a>
+                </div>
+                {% endif %}
+
+                {% if not pending_orders and not pending_reviews and not unread_messages and (not low_stock_products or low_stock_products|length == 0) %}
+                <div class="notification-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <div class="notification-content">
+                        <strong>All Clear!</strong>
+                        <small>No urgent tasks pending</small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Dashboard Content -->
+        <div class="container-fluid p-4">
+            <!-- Statistics Cards -->
+            <div class="admin-stats">
+                <div class="admin-stat-card success" data-stat="products">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <h2 class="stat-number">{{ total_products }}</h2>
+                    <p class="stat-label">Total Products</p>
+                    <p class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +5 this week
+                    </p>
+                </div>
+                
+                <div class="admin-stat-card info" data-stat="users">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h2 class="stat-number">{{ total_users }}</h2>
+                    <p class="stat-label">Total Users</p>
+                    <p class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +12 this month
+                    </p>
+                </div>
+                
+                <div class="admin-stat-card warning" data-stat="orders">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <h2 class="stat-number">{{ total_orders }}</h2>
+                    <p class="stat-label">Total Orders</p>
+                    <p class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +8 today
+                    </p>
+                </div>
+                
+                <div class="admin-stat-card danger" data-stat="revenue">
+                    <div class="stat-icon">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
+                    <h2 class="stat-number">₹2,45,678</h2>
+                    <p class="stat-label">Total Revenue</p>
+                    <p class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +15% this month
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="admin-quick-actions">
+                <a href="{{ url_for('admin.add_product') }}" class="admin-quick-action">
+                    <i class="fas fa-plus"></i>
+                    <h6>Add Product</h6>
+                    <small>Add new product to catalog</small>
+                </a>
+                
+                <a href="{{ url_for('admin.add_category') }}" class="admin-quick-action">
+                    <i class="fas fa-tag"></i>
+                    <h6>Add Category</h6>
+                    <small>Create new category</small>
+                </a>
+                
+                <a href="{{ url_for('admin.manage_orders') }}" class="admin-quick-action">
+                    <i class="fas fa-list"></i>
+                    <h6>Recent Orders</h6>
+                    <small>View and manage orders</small>
+                </a>
+                
+                <a href="{{ url_for('admin.manage_reviews') }}" class="admin-quick-action">
+                    <i class="fas fa-eye"></i>
+                    <h6>Pending Reviews</h6>
+                    <small>Moderate product reviews</small>
+                </a>
+            </div>
+            
+            <!-- Charts Row -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="admin-chart-container">
+                        <div class="admin-chart-header">
+                            <h6>Sales Overview</h6>
+                            <div class="chart-period-selector">
+                                <button class="btn btn-sm btn-outline-primary active">7 Days</button>
+                                <button class="btn btn-sm btn-outline-primary">30 Days</button>
+                                <button class="btn btn-sm btn-outline-primary">3 Months</button>
+                            </div>
+                        </div>
+                        <canvas id="salesChart" width="400" height="150"></canvas>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="admin-chart-container">
+                        <div class="admin-chart-header">
+                            <h6>Order Status</h6>
+                        </div>
+                        <canvas id="ordersChart" width="200" height="150"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity and Low Stock -->
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h5>Recent Orders</h5>
+                            <a href="{{ url_for('admin.manage_orders') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                        <div class="admin-card-body">
+                            {% if recent_orders %}
+                                {% for order in recent_orders %}
+                                    <div class="admin-activity-item">
+                                        <div class="admin-activity-icon bg-primary">
+                                            <i class="fas fa-shopping-bag"></i>
+                                        </div>
+                                        <div class="admin-activity-content">
+                                            <div class="admin-activity-title">
+                                                Order #{{ order.order_number }}
+                                            </div>
+                                            <div class="admin-activity-time">
+                                                {{ order.user.get_full_name() }} • ₹{{ "%.2f"|format(order.total_amount) }}
+                                                <br>
+                                                <small class="text-muted">{{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="admin-activity-status">
+                                            <span class="admin-badge {{ order.status }}">{{ order.status.title() }}</span>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-center text-muted py-4">No recent orders</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h5>Low Stock Alert</h5>
+                            <span class="badge bg-danger">{{ low_stock_products|length }}</span>
+                        </div>
+                        <div class="admin-card-body">
+                            {% if low_stock_products %}
+                                {% for product in low_stock_products %}
+                                    <div class="admin-activity-item">
+                                        <div class="admin-activity-icon bg-warning">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                        </div>
+                                        <div class="admin-activity-content">
+                                            <div class="admin-activity-title">
+                                                {{ product.name }}
+                                            </div>
+                                            <div class="admin-activity-time">
+                                                Stock: {{ product.stock_quantity }} items left
+                                            </div>
+                                        </div>
+                                        <div class="admin-activity-status">
+                                            <a href="{{ url_for('admin.edit_product', id=product.id) }}" class="btn btn-sm btn-outline-primary">
+                                                Update
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-center text-muted py-4">All products are well-stocked</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Category and Revenue Charts -->
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="admin-chart-container">
+                        <div class="admin-chart-header">
+                            <h6>Product Categories</h6>
+                        </div>
+                        <canvas id="categoryChart" width="300" height="200"></canvas>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="admin-chart-container">
+                        <div class="admin-chart-header">
+                            <h6>Weekly Revenue</h6>
+                        </div>
+                        <canvas id="revenueChart" width="300" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Information -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h5>System Information</h5>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <strong>Website Status:</strong><br>
+                                    <span class="admin-badge active">Online</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Total Storage:</strong><br>
+                                    2.3 GB / 10 GB used
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Database:</strong><br>
+                                    SQLite (Healthy)
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Last Backup:</strong><br>
+                                    {{ moment().format('MMMM DD, YYYY') if moment else 'Today' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+// Initialize dashboard-specific features
+$(document).ready(function() {
+    // Chart period selector
+    $('.chart-period-selector button').on('click', function() {
+        $('.chart-period-selector button').removeClass('active');
+        $(this).addClass('active');
+        
+        // Update chart based on selected period
+        updateSalesChart($(this).text());
+    });
+
+    // Show admin notifications panel on load
+    showAdminNotifications();
+
+    // Auto-refresh notifications every 30 seconds
+    setInterval(refreshNotifications, 30000);
+});
+
+function updateSalesChart(period) {
+    // This would typically fetch data from the server based on the period
+    console.log('Updating chart for period:', period);
+}
+
+function showAdminNotifications() {
+    const panel = $('#adminNotificationsPanel');
+    panel.addClass('show');
+    
+    // Hide after 10 seconds but keep it accessible
+    setTimeout(() => {
+        panel.removeClass('show').addClass('minimized');
+    }, 10000);
+}
+
+function refreshNotifications() {
+    // AJAX call to refresh notification counts
+    $.get('{{ url_for("admin.api_stats") }}', function(data) {
+        // Update notification badges
+        $('[data-type="pending_orders"]').text(data.pending_orders);
+        $('[data-type="pending_reviews"]').text(data.pending_reviews); 
+        $('[data-type="unread_messages"]').text(data.unread_messages);
+        
+        // Update notification panel content
+        updateNotificationPanel(data);
+    });
+}
+
+function updateNotificationPanel(data) {
+    // You can implement dynamic notification panel updates here
+    console.log('Notifications refreshed:', data);
+}
+
+// Persistent notification system
+function showAdminNotification(message, type = 'info', persist = false) {
+    const alertClass = (type === 'error' ? 'danger' : type);
+    const notification = $(`
+        <div class="admin-alert alert alert-${alertClass} alert-dismissible fade show" 
+             style="position:fixed; top:80px; right:20px; z-index:9999; min-width:300px;">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `);
+    $('body').append(notification);
+    
+    // Don't auto-remove if persist is true
+    if (!persist) {
+        setTimeout(() => { 
+            notification.alert('close'); 
+        }, 5000);
+    }
+}
+</script>
+{% endblock %}

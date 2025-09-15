@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Dream & Drape{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="profile-avatar mb-3">
+                        <i class="fas fa-user-circle fa-5x text-primary"></i>
+                    </div>
+                    <h5>{{ user.get_full_name() }}</h5>
+                    <p class="text-muted">{{ user.email }}</p>
+                    <small class="text-muted">Member since {{ user.created_at.strftime('%B %Y') }}</small>
+                </div>
+            </div>
+            
+            <div class="list-group mt-3">
+                <a href="#profile-info" class="list-group-item list-group-item-action active" data-bs-toggle="tab">
+                    <i class="fas fa-user me-2"></i> Profile Information
+                </a>
+                <a href="#my-orders" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                    <i class="fas fa-shopping-bag me-2"></i> My Orders
+                </a>
+                <a href="#wishlist" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                    <i class="fas fa-heart me-2"></i> Wishlist
+                </a>
+                <a href="{{ url_for('auth.change_password') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-lock me-2"></i> Change Password
+                </a>
+                <a href="{{ url_for('auth.logout') }}" class="list-group-item list-group-item-action text-danger">
+                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9 col-md-8">
+            <div class="tab-content">
+                <!-- Profile Information Tab -->
+                <div class="tab-pane fade show active" id="profile-info">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Profile Information</h5>
+                            <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">First Name</label>
+                                    <p class="form-control-plaintext">{{ user.first_name }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Last Name</label>
+                                    <p class="form-control-plaintext">{{ user.last_name }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Username</label>
+                                    <p class="form-control-plaintext">{{ user.username }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email</label>
+                                    <p class="form-control-plaintext">{{ user.email }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Phone</label>
+                                    <p class="form-control-plaintext">{{ user.phone or 'Not provided' }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Country</label>
+                                    <p class="form-control-plaintext">{{ user.country or 'India' }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Address</label>
+                                <p class="form-control-plaintext">
+                                    {% if user.address %}
+                                        {{ user.address }}<br>
+                                        {% if user.city %}{{ user.city }}, {% endif %}
+                                        {% if user.state %}{{ user.state }} {% endif %}
+                                        {% if user.pincode %}{{ user.pincode }}{% endif %}
+                                    {% else %}
+                                        Not provided
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Statistics -->
+                    <div class="row mt-4">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-shopping-cart fa-2x text-primary mb-2"></i>
+                                    <h4 class="mb-0">{{ user.orders|length }}</h4>
+                                    <small class="text-muted">Total Orders</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-heart fa-2x text-primary mb-2"></i>
+                                    <h4 class="mb-0">{{ user.wishlist_items|length }}</h4>
+                                    <small class="text-muted">Wishlist Items</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-star fa-2x text-primary mb-2"></i>
+                                    <h4 class="mb-0">{{ user.reviews|length }}</h4>
+                                    <small class="text-muted">Reviews Written</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-calendar fa-2x text-primary mb-2"></i>
+                                    <h4 class="mb-0">{{ ((moment().now - user.created_at).days // 30) if moment else 'N/A' }}</h4>
+                                    <small class="text-muted">Months Member</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Orders Tab -->
+                <div class="tab-pane fade" id="my-orders">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Recent Orders</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if orders %}
+                                {% for order in orders %}
+                                    <div class="order-item border rounded p-3 mb-3">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-3">
+                                                <strong>Order #{{ order.order_number }}</strong><br>
+                                                <small class="text-muted">{{ order.created_at.strftime('%B %d, %Y') }}</small>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'primary' if order.status == 'shipped' else 'warning' }}">
+                                                    {{ order.status.title() }}
+                                                </span>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <strong>₹{{ "%.2f"|format(order.total_amount) }}</strong>
+                                            </div>
+                                            <div class="col-md-2">
+                                                {{ order.order_items|length }} item(s)
+                                            </div>
+                                            <div class="col-md-3 text-end">
+                                                <a href="{{ url_for('auth.order_detail', order_id=order.id) }}" class="btn btn-outline-primary btn-sm">
+                                                    View Details
+                                                </a>
+                                                {% if order.status in ['pending', 'confirmed'] %}
+                                                    <a href="{{ url_for('auth.cancel_order', order_id=order.id) }}" 
+                                                       class="btn btn-outline-danger btn-sm"
+                                                       onclick="return confirm('Are you sure you want to cancel this order?')">
+                                                        Cancel
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                
+                                <div class="text-center mt-3">
+                                    <a href="{{ url_for('auth.my_orders') }}" class="btn btn-primary">
+                                        View All Orders
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                                    <h5>No orders yet</h5>
+                                    <p class="text-muted">When you place an order, it will appear here</p>
+                                    <a href="{{ url_for('main.products') }}" class="btn btn-primary">
+                                        Start Shopping
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wishlist Tab -->
+                <div class="tab-pane fade" id="wishlist">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">My Wishlist</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if user.wishlist_items %}
+                                <div class="row">
+                                    {% for item in user.wishlist_items %}
+                                        <div class="col-lg-4 col-md-6 mb-4">
+                                            <div class="card product-card h-100">
+                                                <img src="{{ url_for('static', filename='images/products/' + (item.product.image_url or 'placeholder.jpg')) }}" 
+                                                     class="card-img-top" alt="{{ item.product.name }}"
+                                                     onerror="this.src='{{ url_for('static', filename='images/placeholder.jpg') }}'">
+                                                
+                                                <div class="card-body d-flex flex-column">
+                                                    <h6 class="card-title">{{ item.product.name }}</h6>
+                                                    <div class="price mb-2">
+                                                        <span class="text-primary">₹{{ "%.2f"|format(item.product.price) }}</span>
+                                                    </div>
+                                                    
+                                                    <div class="mt-auto">
+                                                        <div class="btn-group w-100" role="group">
+                                                            <a href="{{ url_for('main.product_detail', id=item.product.id) }}" 
+                                                               class="btn btn-outline-primary btn-sm">
+                                                                View
+                                                            </a>
+                                                            {% if item.product.is_in_stock() %}
+                                                                <button class="btn btn-primary btn-sm" 
+                                                                        onclick="addToCart({{ item.product.id }}, 1)">
+                                                                    Add to Cart
+                                                                </button>
+                                                            {% else %}
+                                                                <button class="btn btn-secondary btn-sm" disabled>
+                                                                    Out of Stock
+                                                                </button>
+                                                            {% endif %}
+                                                            <a href="{{ url_for('main.remove_from_wishlist', product_id=item.product.id) }}" 
+                                                               class="btn btn-outline-danger btn-sm"
+                                                               onclick="return confirm('Remove from wishlist?')">
+                                                                <i class="fas fa-trash"></i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-heart fa-3x text-muted mb-3"></i>
+                                    <h5>Your wishlist is empty</h5>
+                                    <p class="text-muted">Save items you love to your wishlist</p>
+                                    <a href="{{ url_for('main.products') }}" class="btn btn-primary">
+                                        Browse Products
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Tab switching
+$('.list-group-item[data-bs-toggle="tab"]').on('click', function(e) {
+    e.preventDefault();
+    $('.list-group-item').removeClass('active');
+    $(this).addClass('active');
+    
+    const target = $(this).attr('href');
+    $('.tab-pane').removeClass('show active');
+    $(target).addClass('show active');
+});
+
+// Add to cart from wishlist
+function addToCart(productId, quantity) {
+    $.ajax({
+        url: '{{ url_for("main.add_to_cart") }}',
+        method: 'POST',
+        data: {
+            product_id: productId,
+            quantity: quantity || 1
+        },
+        success: function(response) {
+            showNotification('Product added to cart!', 'success');
+            updateCartCount();
+        },
+        error: function() {
+            showNotification('Error adding product to cart', 'error');
+        }
+    });
+}
+</script>
+{% endblock %}

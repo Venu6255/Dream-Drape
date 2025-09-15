@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmation - Dream & Drape{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Success Header -->
+            <div class="text-center mb-5">
+                <div class="success-icon mb-3">
+                    <i class="fas fa-check-circle fa-5x text-success"></i>
+                </div>
+                <h1 class="display-4 text-success">Order Confirmed!</h1>
+                <p class="lead">Thank you for your purchase. Your order has been successfully placed.</p>
+            </div>
+
+            <!-- Order Details Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-receipt me-2"></i>
+                        Order Details
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <strong>Order Number:</strong>
+                            <span class="text-primary">{{ order.order_number }}</span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Order Date:</strong>
+                            {{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Payment Method:</strong>
+                            <span class="text-capitalize">
+                                {% if order.payment_method == 'cod' %}
+                                    Cash on Delivery
+                                {% elif order.payment_method == 'razorpay' %}
+                                    Online Payment (Razorpay)
+                                {% elif order.payment_method == 'stripe' %}
+                                    Credit/Debit Card
+                                {% else %}
+                                    {{ order.payment_method }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Order Status:</strong>
+                            <span class="badge bg-warning text-dark">{{ order.status.title() }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shopping-bag me-2"></i>
+                        Items Ordered ({{ order.order_items|length }} items)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Details</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.order_items %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% set placeholder_url = url_for('static', filename='images/placeholder.jpg') %}
+                                                <img src="{{ url_for('static', filename='images/products/' + (item.product.image_url or 'placeholder.jpg')) }}"
+                                                     class="rounded me-3" alt="{{ item.product.name }}"
+                                                     style="width: 60px; height: 60px; object-fit: cover;"
+                                                     onerror="this.src='{{ placeholder_url }}'">
+                                                <div>
+                                                    <h6 class="mb-0">{{ item.product.name }}</h6>
+                                                    <small class="text-muted">SKU: {{ item.product.sku }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if item.size %}
+                                                <small><strong>Size:</strong> {{ item.size }}</small><br>
+                                            {% endif %}
+                                            {% if item.color %}
+                                                <small><strong>Color:</strong> {{ item.color }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>₹{{ "%.2f"|format(item.price) }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td class="text-end">₹{{ "%.2f"|format(item.get_total()) }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Order Total -->
+                    <div class="row justify-content-end">
+                        <div class="col-md-4">
+                            <div class="border-top pt-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Subtotal:</span>
+                                    <span>₹{{ "%.2f"|format(order.total_amount - 50 - (order.total_amount * 0.18)) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Shipping:</span>
+                                    <span>
+                                        {% if order.total_amount >= 999 %}
+                                            <span class="text-success">Free</span>
+                                        {% else %}
+                                            ₹50.00
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Tax (18%):</span>
+                                    <span>₹{{ "%.2f"|format(order.total_amount * 0.18) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between border-top pt-2">
+                                    <strong>Total:</strong>
+                                    <strong>₹{{ "%.2f"|format(order.total_amount) }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shipping-fast me-2"></i>
+                        Shipping Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Delivery Address:</h6>
+                            <address class="mb-0">
+                                {{ order.shipping_address }}<br>
+                                {{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_pincode }}<br>
+                                {{ order.shipping_country }}<br>
+                                {% if order.shipping_phone %}
+                                    <strong>Phone:</strong> {{ order.shipping_phone }}
+                                {% endif %}
+                            </address>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Delivery Estimate:</h6>
+                            <p class="mb-1">
+                                {% if order.payment_method == 'cod' %}
+                                    <strong>5-7 business days</strong>
+                                {% else %}
+                                    <strong>3-5 business days</strong>
+                                {% endif %}
+                            </p>
+                            {% if order.tracking_number %}
+                                <p class="mb-0">
+                                    <strong>Tracking Number:</strong> {{ order.tracking_number }}
+                                </p>
+                            {% else %}
+                                <small class="text-muted">Tracking number will be provided once your order is shipped.</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if order.notes %}
+                        <div class="mt-3">
+                            <h6>Order Notes:</h6>
+                            <p class="text-muted">{{ order.notes }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payment Information -->
+            {% if order.payment_method == 'cod' %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Cash on Delivery:</strong> Please keep the exact amount ready when your order arrives. 
+                    Additional COD charges may apply.
+                </div>
+            {% elif order.payment_method in ['razorpay', 'stripe'] %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Payment Successful:</strong> Your payment has been processed successfully.
+                    {% if order.payment_id %}
+                        <br><small>Payment ID: {{ order.payment_id }}</small>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <!-- Next Steps -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list-check me-2"></i>
+                        What Happens Next?
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex mb-3">
+                                <div class="flex-shrink-0">
+                                    <div class="step-number bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                        1
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <h6>Order Confirmation</h6>
+                                    <small class="text-muted">You'll receive an email confirmation shortly</small>
+                                </div>
+                            </div>
+                            <div class="d-flex mb-3">
+                                <div class="flex-shrink-0">
+                                    <div class="step-number bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                        2
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <h6>Order Processing</h6>
+                                    <small class="text-muted">We'll prepare your items for shipping</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex mb-3">
+                                <div class="flex-shrink-0">
+                                    <div class="step-number bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                        3
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <h6>Shipped</h6>
+                                    <small class="text-muted">You'll receive tracking information via SMS/Email</small>
+                                </div>
+                            </div>
+                            <div class="d-flex mb-3">
+                                <div class="flex-shrink-0">
+                                    <div class="step-number bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                        4
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <h6>Delivered</h6>
+                                    <small class="text-muted">Enjoy your Dream & Drape purchase!</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center">
+                <a href="{{ url_for('main.products') }}" class="btn btn-outline-primary me-3">
+                    <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+                </a>
+                <a href="{{ url_for('auth.profile') }}" class="btn btn-primary">
+                    <i class="fas fa-user me-2"></i>View My Orders
+                </a>
+            </div>
+
+            <!-- Support Information -->
+            <div class="text-center mt-5">
+                <h6>Need Help?</h6>
+                <p class="text-muted">
+                    If you have any questions about your order, please contact us at 
+                    <a href="mailto:support@dreamdrape.com">support@dreamdrape.com</a> 
+                    or call us at <a href="tel:+919876543210">+91 98765 43210</a>
+                </p>
+                <small class="text-muted">
+                    Save this page or take a screenshot for your records. You can also find this information in your profile under "My Orders".
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-scroll to top on page load
+$(document).ready(function() {
+    $('html, body').scrollTop(0);
+});
+
+// Print order functionality
+function printOrder() {
+    window.print();
+}
+
+// Share order functionality
+function shareOrder() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'My Dream & Drape Order',
+            text: 'I just placed an order at Dream & Drape! Order #{{ order.order_number }}',
+            url: window.location.href
+        });
+    } else {
+        // Fallback - copy to clipboard
+        navigator.clipboard.writeText(window.location.href).then(function() {
+            showNotification('Order link copied to clipboard!', 'success');
+        });
+    }
+}
+</script>
+{% endblock %}

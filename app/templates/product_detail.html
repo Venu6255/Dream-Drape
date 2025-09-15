@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - Dream & Drape{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Product Images -->
+        <div class="col-lg-6 mb-4">
+            <div class="product-image-gallery">
+                <img src="{{ url_for('static', filename='images/products/' + (product.image_url or 'placeholder.jpg')) }}" 
+                     class="main-image img-fluid rounded" alt="{{ product.name }}"
+                     onerror="this.src='{{ url_for('static', filename='images/placeholder.jpg') }}'">
+                
+                <!-- Thumbnail images would go here if you have additional_images -->
+                {% if product.additional_images %}
+                    <div class="thumbnail-images mt-3">
+                        <!-- Additional images implementation -->
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Product Information -->
+        <div class="col-lg-6">
+            <div class="product-info">
+                <!-- Product Title -->
+                <h1 class="display-title mb-3">{{ product.name }}</h1>
+                
+                <!-- Product Rating -->
+                {% if product.reviews %}
+                    <div class="rating-stars mb-3">
+                        {% for i in range(1, 6) %}
+                            {% if i <= product.get_average_rating() %}
+                                <i class="fas fa-star"></i>
+                            {% else %}
+                                <i class="far fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="ms-2">({{ product.reviews|length }} reviews)</span>
+                    </div>
+                {% endif %}
+
+                <!-- Price -->
+                <div class="price mb-4">
+                    {% if product.original_price and product.original_price > product.price %}
+                        <span class="original-price h5">₹{{ "%.2f"|format(product.original_price) }}</span>
+                    {% endif %}
+                    <span class="current-price h3 text-primary">₹{{ "%.2f"|format(product.price) }}</span>
+                    {% if product.get_discount_percentage() > 0 %}
+                        <span class="discount-badge ms-2">{{ product.get_discount_percentage() }}% OFF</span>
+                    {% endif %}
+                </div>
+
+                <!-- Product Description -->
+                <div class="mb-4">
+                    <h5>Description</h5>
+                    <p class="text-muted">{{ product.description or "No description available." }}</p>
+                </div>
+
+                <!-- Product Details -->
+                <div class="row mb-4">
+                    {% if product.material %}
+                        <div class="col-md-6">
+                            <strong>Material:</strong> {{ product.material }}
+                        </div>
+                    {% endif %}
+                    {% if product.sku %}
+                        <div class="col-md-6">
+                            <strong>SKU:</strong> {{ product.sku }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Add to Cart Form -->
+                {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('main.add_to_cart') }}" class="mb-4">
+                        {{ add_to_cart_form.hidden_tag() }}
+                        {{ add_to_cart_form.product_id(value=product.id) }}
+                        
+                        <!-- Size Selection -->
+                        {% if product.sizes %}
+                            <div class="size-selector mb-3">
+                                <h6>Size:</h6>
+                                <div class="size-options">
+                                    {% for size in product.get_size_list() %}
+                                        <div class="size-option" onclick="selectSize(this, '{{ size }}')">
+                                            {{ size }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {{ add_to_cart_form.size(style="display: none;") }}
+                            </div>
+                        {% endif %}
+
+                        <!-- Color Selection -->
+                        {% if product.colors %}
+                            <div class="color-selector mb-3">
+                                <h6>Color:</h6>
+                                <div class="color-options">
+                                    {% for color in product.get_color_list() %}
+                                        <div class="color-option" onclick="selectColor(this, '{{ color }}')" 
+                                            title="{{ color }}" style="background-color: {{ color.lower() }};">
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {{ add_to_cart_form.color(style="display: none;") }}
+                            </div>
+                        {% endif %}
+
+                        <!-- Quantity -->
+                        <div class="quantity-selector mb-4">
+                            <h6>Quantity:</h6>
+                            <div class="quantity-controls">
+                                <button type="button" class="quantity-btn quantity-decrease">-</button>
+                                {{ add_to_cart_form.quantity(class="quantity-input", min="1", max="10") }}
+                                <button type="button" class="quantity-btn quantity-increase">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Stock Status -->
+                        {% if product.is_in_stock() %}
+                            <div class="stock-status mb-3">
+                                <span class="text-success"><i class="fas fa-check"></i> In Stock ({{ product.stock_quantity }} available)</span>
+                            </div>
+                        {% else %}
+                            <div class="stock-status mb-3">
+                                <span class="text-danger"><i class="fas fa-times"></i> Out of Stock</span>
+                            </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            {% if product.is_in_stock() %}
+                                <button type="submit" class="btn btn-primary btn-lg me-3">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                            {% endif %}
+                            
+                            <button type="button" class="btn btn-outline-primary btn-lg" onclick="toggleWishlist({{ product.id }})">
+                                <i class="fas fa-heart"></i> Add to Wishlist
+                            </button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="alert alert-info">
+                        <a href="{{ url_for('auth.login') }}">Login</a> or <a href="{{ url_for('auth.register') }}">register</a> to add items to cart.
+                    </div>
+                {% endif %}
+
+                <!-- Care Instructions -->
+                {% if product.care_instructions %}
+                    <div class="care-instructions mb-4">
+                        <h6>Care Instructions:</h6>
+                        <p class="text-muted small">{{ product.care_instructions }}</p>
+                    </div>
+                {% endif %}
+
+                <!-- Share Buttons -->
+                <div class="share-buttons">
+                    <h6>Share:</h6>
+                    <button class="btn btn-outline-primary btn-sm me-2" onclick="shareProduct('facebook')">
+                        <i class="fab fa-facebook-f"></i>
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm me-2" onclick="shareProduct('twitter')">
+                        <i class="fab fa-twitter"></i>
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" onclick="shareProduct('whatsapp')">
+                        <i class="fab fa-whatsapp"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Reviews Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="display-title mb-4">Customer Reviews</h3>
+            
+            <!-- Add Review Form -->
+            {% if current_user.is_authenticated %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Write a Review</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('main.add_review', product_id=product.id) }}">
+                            {{ review_form.hidden_tag() }}
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    {{ review_form.rating.label(class="form-label") }}
+                                    {{ review_form.rating(class="form-select") }}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ review_form.comment.label(class="form-label") }}
+                                {{ review_form.comment(class="form-control", rows="4") }}
+                            </div>
+                            
+                            {{ review_form.submit(class="btn btn-primary") }}
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Reviews List -->
+            {% if reviews %}
+                <div class="reviews-list">
+                    {% for review in reviews %}
+                        <div class="review-card mb-4">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="review-rating mb-2">
+                                        {% for i in range(1, 6) %}
+                                            {% if i <= review.rating %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <h6 class="review-user">{{ review.user.get_full_name() }}</h6>
+                                    <p class="review-comment">{{ review.comment }}</p>
+                                </div>
+                                <small class="review-date text-muted">{{ review.created_at.strftime('%B %d, %Y') }}</small>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">No reviews yet. Be the first to review this product!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Related Products Section -->
+    {% if related_products %}
+        <div class="row mt-5">
+            <div class="col-12">
+                <h3 class="display-title mb-4">Related Products</h3>
+                
+                <div class="row">
+                    {% for related_product in related_products %}
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="card product-card h-100">
+                                <img src="{{ url_for('static', filename='images/products/' + (related_product.image_url or 'placeholder.jpg')) }}" 
+                                     class="card-img-top" alt="{{ related_product.name }}"
+                                     onerror="this.src='{{ url_for('static', filename='images/placeholder.jpg') }}'">
+                                
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ related_product.name }}</h6>
+                                    <div class="price">
+                                        <span class="current-price">₹{{ "%.2f"|format(related_product.price) }}</span>
+                                    </div>
+                                    <a href="{{ url_for('main.product_detail', id=related_product.id) }}" class="btn btn-primary btn-sm mt-2">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Share product function
+function shareProduct(platform) {
+    const url = window.location.href;
+    const title = '{{ product.name }} - Dream & Drape';
+    
+    let shareUrl;
+    switch(platform) {
+        case 'facebook':
+            shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+            break;
+        case 'twitter':
+            shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
+            break;
+        case 'whatsapp':
+            shareUrl = `https://wa.me/?text=${encodeURIComponent(title + ' ' + url)}`;
+            break;
+    }
+    
+    if (shareUrl) {
+        window.open(shareUrl, '_blank', 'width=600,height=400');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}View Order #{{ order.order_number }} - Admin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h2>Order #{{ order.order_number }}</h2>
+  <p class="text-muted">
+    Placed by {{ order.user.get_full_name() }} on {{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+  </p>
+
+  <div class="row">
+    <!-- Order Items -->
+    <div class="col-lg-8 mb-4">
+      <div class="card">
+        <div class="card-header">
+          <strong>Ordered Items</strong>
+        </div>
+        <div class="card-body">
+          {% set placeholder = url_for('static', filename='images/placeholder.jpg') %}
+          {% for item in order.order_items %}
+          <div class="d-flex align-items-center mb-3">
+            <img src="{{ url_for('static', filename='images/products/' + (item.product.image_url or 'placeholder.jpg')) }}"
+                 onerror="this.src='{{ placeholder }}'"
+                 alt="{{ item.product.name }}"
+                 style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 12px;">
+            <div class="flex-grow-1">
+              <h6 class="mb-1">{{ item.product.name }}</h6>
+              <small class="text-muted">
+                Qty: {{ item.quantity }}
+                {% if item.size %}| Size: {{ item.size }}{% endif %}
+                {% if item.color %}| Color: {{ item.color }}{% endif %}
+              </small>
+            </div>
+            <div class="text-end">
+              <p class="mb-1">₹{{ '%.2f'|format(item.price) }} each</p>
+              <p class="mb-0"><strong>₹{{ '%.2f'|format(item.get_total()) }}</strong></p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Summary & Actions -->
+    <div class="col-lg-4 mb-4">
+      <div class="card mb-4">
+        <div class="card-header">
+          <strong>Order Summary</strong>
+        </div>
+        <div class="card-body">
+          <p class="d-flex justify-content-between">
+            <span>Subtotal</span>
+            <span>₹{{ '%.2f'|format(order.total_amount) }}</span>
+          </p>
+          {% set shipping = 0 if order.total_amount >= 999 else 50 %}
+          <p class="d-flex justify-content-between">
+            <span>Shipping</span>
+            <span>{% if shipping==0 %}Free{% else %}₹{{ shipping }}{% endif %}</span>
+          </p>
+          <p class="d-flex justify-content-between">
+            <span>Tax (18%)</span>
+            <span>₹{{ '%.2f'|format(order.total_amount * 0.18) }}</span>
+          </p>
+          <hr>
+          <p class="d-flex justify-content-between fs-5 fw-bold">
+            <span>Total</span>
+            <span>₹{{ '%.2f'|format(order.total_amount + shipping + (order.total_amount * 0.18)) }}</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header"><strong>Shipping & Payment</strong></div>
+        <div class="card-body">
+          <h6>Shipping Address</h6>
+          <p class="small">
+            {{ order.shipping_address }}<br>
+            {{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_pincode }}<br>
+            {{ order.shipping_country }}<br>
+            {% if order.shipping_phone %}📞 {{ order.shipping_phone }}{% endif %}
+          </p>
+          <h6>Payment</h6>
+          <p class="small mb-1">
+            Method: {{ order.payment_method|upper }}<br>
+            Status: 
+            <span class="badge bg-{{ 'success' if order.payment_status=='paid' else 'warning' if order.payment_status=='pending' else 'danger' }}">
+              {{ order.payment_status.title() }}
+            </span>
+          </p>
+          {% if order.payment_id %}
+          <p class="small">Payment ID: {{ order.payment_id }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if order.status in ['pending','confirmed'] %}
+      <div class="d-grid gap-2 mb-2">
+        <a href="{{ url_for('admin.edit_order', id=order.id) }}" class="btn btn-outline-primary">Change Status</a>
+        <a href="{{ url_for('admin.edit_order', id=order.id) }}?status=cancelled" class="btn btn-outline-danger" onclick="return confirm('Cancel this order?')">Cancel Order</a>
+      </div>
+      {% endif %}
+      <a href="{{ url_for('admin.manage_orders') }}" class="btn btn-secondary w-100">Back to Orders</a>
+    </div>
+  </div>
+
+  <!-- Order Notes -->
+  {% if order.notes %}
+  <div class="card">
+    <div class="card-header"><strong>Order Notes</strong></div>
+    <div class="card-body">
+      <p>{{ order.notes }}</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders - Dream & Drape{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h1 class="display-title text-center">My Orders</h1>
+            <p class="lead text-center text-muted">Track and manage your orders</p>
+        </div>
+    </div>
+
+    {% if orders %}
+        <div class="row">
+            <div class="col-12">
+                <!-- Order Statistics -->
+                <div class="row mb-4">
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-shopping-bag fa-2x text-primary mb-2"></i>
+                                <h4 class="mb-0">{{ orders.total }}</h4>
+                                <small class="text-muted">Total Orders</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                                <h4 class="mb-0">{{ orders.items|selectattr('status', 'equalto', 'pending')|list|length }}</h4>
+                                    <small class="text-muted">Pending</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-truck fa-2x text-info mb-2"></i>
+                                <h4 class="mb-0">{{ orders|selectattr('status', 'equalto', 'shipped')|list|length }}</h4>
+                                <small class="text-muted">Shipped</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                <h4 class="mb-0">{{ orders|selectattr('status', 'equalto', 'delivered')|list|length }}</h4>
+                                <small class="text-muted">Delivered</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders List -->
+                {% for order in orders %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h5 class="mb-0">Order #{{ order.order_number }}</h5>
+                                    <small class="text-muted">{{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                </div>
+                                <div class="col-md-6 text-md-end">
+                                    <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'primary' if order.status == 'shipped' else 'info' if order.status == 'confirmed' else 'warning' if order.status == 'pending' else 'danger' }} fs-6">
+                                        {{ order.status.title() }}
+                                    </span>
+                                    <div class="mt-1">
+                                        <strong class="h5">₹{{ "%.2f"|format(order.total_amount) }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Order Items -->
+                            <div class="row">
+                                {% for item in order.order_items %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="d-flex">
+                                            {% set placeholder_url = url_for('static', filename='images/placeholder.jpg') %}
+                                            <img src="{{ url_for('static', filename='images/products/' + (item.product.image_url or 'placeholder.jpg')) }}" 
+                                                 class="me-3" alt="{{ item.product.name }}" 
+                                                 style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
+                                                 onerror="this.src='{{ placeholder_url }}'">
+                                            <div>
+                                                <h6 class="mb-1">{{ item.product.name }}</h6>
+                                                <p class="mb-1 text-muted">
+                                                    Qty: {{ item.quantity }}
+                                                    {% if item.size %} | Size: {{ item.size }}{% endif %}
+                                                    {% if item.color %} | Color: {{ item.color }}{% endif %}
+                                                </p>
+                                                <small class="text-primary">₹{{ "%.2f"|format(item.price) }} each</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <hr>
+
+                            <!-- Order Details -->
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6>Shipping Address:</h6>
+                                    <p class="text-muted">
+                                        {{ order.shipping_address }}<br>
+                                        {{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_pincode }}<br>
+                                        {{ order.shipping_country }}<br>
+                                        {% if order.shipping_phone %}📞 {{ order.shipping_phone }}{% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Payment:</h6>
+                                    <p class="text-muted">
+                                        <span class="badge bg-{{ 'success' if order.payment_status == 'paid' else 'warning' if order.payment_status == 'pending' else 'danger' }}">
+                                            {{ order.payment_status.title() }}
+                                        </span><br>
+                                        Method: {{ order.payment_method.upper() if order.payment_method else 'Not specified' }}
+                                        {% if order.payment_id %}<br>ID: {{ order.payment_id }}{% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Tracking:</h6>
+                                    {% if order.tracking_number %}
+                                        <p class="text-muted">
+                                            <strong>{{ order.tracking_number }}</strong><br>
+                                            <a href="#" class="btn btn-outline-primary btn-sm">Track Package</a>
+                                        </p>
+                                    {% else %}
+                                        <p class="text-muted">Tracking number will be provided once shipped</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Order Actions -->
+                            <div class="d-flex gap-2 mt-3">
+                                <a href="{{ url_for('auth.order_detail', order_id=order.id) }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                                
+                                {% if order.status in ['pending', 'confirmed'] %}
+                                    <a href="{{ url_for('auth.cancel_order', order_id=order.id) }}" 
+                                       class="btn btn-outline-danger btn-sm"
+                                       onclick="return confirm('Are you sure you want to cancel this order?')">
+                                        <i class="fas fa-times"></i> Cancel Order
+                                    </a>
+                                {% endif %}
+
+                                {% if order.status == 'delivered' %}
+                                    <a href="{{ url_for('main.products') }}" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-redo"></i> Reorder
+                                    </a>
+                                {% endif %}
+
+                                <a href="#" class="btn btn-outline-info btn-sm" onclick="downloadInvoice({{ order.id }})">
+                                    <i class="fas fa-download"></i> Invoice
+                                </a>
+                            </div>
+
+                            <!-- Order Notes -->
+                            {% if order.notes %}
+                                <div class="mt-3">
+                                    <h6>Order Notes:</h6>
+                                    <p class="text-muted">{{ order.notes }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if orders.pages and orders.pages > 1 %}
+                    <nav aria-label="Orders pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if orders.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('auth.my_orders', page=orders.prev_num) }}">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in orders.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != orders.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('auth.my_orders', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if orders.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('auth.my_orders', page=orders.next_num) }}">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <!-- No Orders -->
+        <div class="row">
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                <h4>No orders yet</h4>
+                <p class="text-muted">When you place an order, it will appear here</p>
+                <a href="{{ url_for('main.products') }}" class="btn btn-primary">
+                    Start Shopping
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Order Status Legend -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Order Status Guide</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-2">
+                            <span class="badge bg-warning me-2">Pending</span>
+                            <small>Order received, processing</small>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <span class="badge bg-info me-2">Confirmed</span>
+                            <small>Order confirmed, preparing</small>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <span class="badge bg-primary me-2">Shipped</span>
+                            <small>Order dispatched</small>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <span class="badge bg-success me-2">Delivered</span>
+                            <small>Order delivered successfully</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Download invoice function
+function downloadInvoice(orderId) {
+    // You can implement invoice generation here
+    alert('Invoice download functionality can be implemented here');
+    // Example:
+    // window.open('/download_invoice/' + orderId, '_blank');
+}
+
+// Auto-refresh order status (optional)
+function refreshOrderStatus() {
+    // You can implement AJAX refresh here if needed
+    location.reload();
+}
+
+// Order filtering (optional enhancement)
+function filterOrders(status) {
+    const orders = document.querySelectorAll('.card');
+    orders.forEach(order => {
+        if (status === 'all' || order.dataset.status === status) {
+            order.style.display = 'block';
+        } else {
+            order.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

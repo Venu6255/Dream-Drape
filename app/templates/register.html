@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Dream & Drape{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Dream & Drape" height="60" class="mb-3">
+                        <h2 class="display-title">Create Account</h2>
+                        <p class="text-muted">Join Dream & Drape and start shopping</p>
+                    </div>
+                    
+                    <form method="POST" class="needs-validation" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Name Fields -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.first_name.label(class="form-label") }}
+                                {{ form.first_name(class="form-control" + (" is-invalid" if form.first_name.errors else ""), placeholder="First name") }}
+                                {% if form.first_name.errors %}
+                                    <div class="invalid-feedback">{{ form.first_name.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.last_name.label(class="form-label") }}
+                                {{ form.last_name(class="form-control" + (" is-invalid" if form.last_name.errors else ""), placeholder="Last name") }}
+                                {% if form.last_name.errors %}
+                                    <div class="invalid-feedback">{{ form.last_name.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Username Field -->
+                        <div class="mb-3">
+                            {{ form.username.label(class="form-label") }}
+                            {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), placeholder="Choose a username") }}
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback">{{ form.username.errors[0] }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Username must be 4-20 characters long</small>
+                        </div>
+                        
+                        <!-- Email Field -->
+                        <div class="mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="Enter your email") }}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback">{{ form.email.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Phone Field -->
+                        <div class="mb-3">
+                            {{ form.phone.label(class="form-label") }}
+                            {{ form.phone(class="form-control" + (" is-invalid" if form.phone.errors else ""), placeholder="Phone number (optional)") }}
+                            {% if form.phone.errors %}
+                                <div class="invalid-feedback">{{ form.phone.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Password Fields -->
+                        <div class="mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="Create password", id="password") }}
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password', 'passwordToggle')">
+                                    <i class="fas fa-eye" id="passwordToggle"></i>
+                                </button>
+                            </div>
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback d-block">{{ form.password.errors[0] }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Password must be at least 6 characters long</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.password2.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.password2(class="form-control" + (" is-invalid" if form.password2.errors else ""), placeholder="Confirm password", id="password2") }}
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password2', 'passwordToggle2')">
+                                    <i class="fas fa-eye" id="passwordToggle2"></i>
+                                </button>
+                            </div>
+                            {% if form.password2.errors %}
+                                <div class="invalid-feedback d-block">{{ form.password2.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Terms and Conditions -->
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="{{ url_for('main.terms') }}" target="_blank">Terms & Conditions</a> 
+                                and <a href="{{ url_for('main.privacy') }}" target="_blank">Privacy Policy</a>
+                            </label>
+                            <div class="invalid-feedback">
+                                You must agree to the terms and conditions
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-grid mb-3">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                    
+                    <!-- Divider -->
+                    <div class="text-center mb-3">
+                        <small class="text-muted">Already have an account?</small>
+                    </div>
+                    
+                    <!-- Login Link -->
+                    <div class="d-grid">
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary">
+                            Sign In Instead
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePassword(fieldId, toggleId) {
+    const passwordField = document.getElementById(fieldId);
+    const passwordToggle = document.getElementById(toggleId);
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        passwordToggle.classList.remove('fa-eye');
+        passwordToggle.classList.add('fa-eye-slash');
+    } else {
+        passwordField.type = 'password';
+        passwordToggle.classList.remove('fa-eye-slash');
+        passwordToggle.classList.add('fa-eye');
+    }
+}
+
+// Password confirmation validation
+$('#password2').on('input', function() {
+    const password = $('#password').val();
+    const confirmPassword = $(this).val();
+    
+    if (password !== confirmPassword) {
+        this.setCustomValidity('Passwords do not match');
+        $(this).removeClass('is-valid').addClass('is-invalid');
+    } else {
+        this.setCustomValidity('');
+        $(this).removeClass('is-invalid').addClass('is-valid');
+    }
+});
+
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Username validation
+$('#username').on('input', function() {
+    const username = $(this).val();
+    const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/;
+    
+    if (username && !usernameRegex.test(username)) {
+        this.setCustomValidity('Username must be 4-20 characters and contain only letters, numbers, and underscores');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+// Email validation
+$('#email').on('input', function() {
+    const email = $(this).val();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (email && !emailRegex.test(email)) {
+        this.setCustomValidity('Please enter a valid email address');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

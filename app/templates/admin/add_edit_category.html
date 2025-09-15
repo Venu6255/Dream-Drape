@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Dream & Drape Admin{% endblock %}
+
+{% block content %}
+<h2>{{ title }}</h2>
+<form method="POST" enctype="multipart/form-data" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="mb-3">
+    {{ form.name.label(class="form-label") }}
+    {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Category Name") }}
+    {% for e in form.name.errors %}
+      <div class="invalid-feedback">{{ e }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.description.label(class="form-label") }}
+    {{ form.description(class="form-control", rows="4", placeholder="Category Description") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.image_file.label(class="form-label") }}
+    {{ form.image_file(class="form-control") }}
+  </div>
+
+  <div class="form-check mb-3">
+    {{ form.is_active(class="form-check-input") }}
+    {{ form.is_active.label(class="form-check-label") }}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save</button>
+  <a href="{{ url_for('admin.manage_categories') }}" class="btn btn-secondary ms-2">Cancel</a>
+</form>
+{% endblock %}

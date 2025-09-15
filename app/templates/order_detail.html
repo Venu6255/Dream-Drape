@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Order #{{ order.order_number }} - Dream & Drape{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <h1 class="display-title">Order #{{ order.order_number }}</h1>
+      <p class="text-muted">{{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+    </div>
+  </div>
+
+  <div class="row mb-5">
+    <div class="col-md-8">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Order Items</h5>
+        </div>
+        <div class="card-body">
+          {% set placeholder = url_for('static', filename='images/placeholder.jpg') %}
+          {% for item in order.order_items %}
+          <div class="d-flex mb-4">
+            <img src="{{ url_for('static', filename='images/products/' + (item.product.image_url or 'placeholder.jpg')) }}"
+                 alt="{{ item.product.name }}"
+                 onerror="this.src='{{ placeholder }}'"
+                 style="width:80px;height:80px;object-fit:cover;border-radius:8px;margin-right:16px;">
+            <div class="flex-grow-1">
+              <h6>{{ item.product.name }}</h6>
+              <p class="mb-1 text-muted">
+                Quantity: {{ item.quantity }}
+                {% if item.size %}| Size: {{ item.size }}{% endif %}
+                {% if item.color %}| Color: {{ item.color }}{% endif %}
+              </p>
+              <p class="mb-0"><strong>Price:</strong> ₹{{ '%.2f'|format(item.price) }} each</p>
+            </div>
+            <div class="text-end">
+              <p class="mb-0"><strong>Total:</strong> ₹{{ '%.2f'|format(item.get_total()) }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Shipping & Billing</h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <h6>Shipping Address</h6>
+              <p class="mb-0">
+                {{ order.shipping_address }}<br>
+                {{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_pincode }}<br>
+                {{ order.shipping_country }}<br>
+                {% if order.shipping_phone %}📞 {{ order.shipping_phone }}{% endif %}
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h6>Billing & Payment</h6>
+              <p class="mb-1">
+                <strong>Method:</strong> {{ order.payment_method|upper }}<br>
+                <strong>Status:</strong>
+                <span class="badge bg-{{ 'success' if order.payment_status=='paid' else 'warning' if order.payment_status=='pending' else 'danger' }}">
+                  {{ order.payment_status.title() }}
+                </span>
+              </p>
+              {% if order.payment_id %}
+              <p class="mb-0"><strong>Payment ID:</strong> {{ order.payment_id }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% if order.notes %}
+          <div>
+            <h6>Order Notes</h6>
+            <p class="text-muted">{{ order.notes }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <a href="{{ url_for('auth.my_orders') }}" class="btn btn-outline-secondary">
+          &larr; Back to My Orders
+        </a>
+        <button class="btn btn-primary" onclick="downloadInvoice({{ order.id }})">
+          <i class="fas fa-download"></i> Download Invoice
+        </button>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Order Summary</h5>
+        </div>
+        <div class="card-body">
+          <p class="d-flex justify-content-between mb-2">
+            <span>Subtotal</span>
+            <span>₹{{ '%.2f'|format(order.total_amount) }}</span>
+          </p>
+          {% set shipping_charge = 0 if order.total_amount >= 999 else 50 %}
+          <p class="d-flex justify-content-between mb-2">
+            <span>Shipping</span>
+            <span>
+              {% if shipping_charge==0 %}
+                Free
+              {% else %}
+                ₹{{ shipping_charge }}
+              {% endif %}
+            </span>
+          </p>
+          <p class="d-flex justify-content-between mb-2">
+            <span>Tax (18%)</span>
+            <span>₹{{ '%.2f'|format(order.total_amount * 0.18) }}</span>
+          </p>
+          <hr>
+          <p class="d-flex justify-content-between fs-5 fw-bold">
+            <span>Total</span>
+            <span>₹{{ '%.2f'|format(order.total_amount + shipping_charge + (order.total_amount * 0.18)) }}</span>
+          </p>
+        </div>
+      </div>
+
+      {% if order.tracking_number %}
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Tracking</h5>
+        </div>
+        <div class="card-body text-center">
+          <p><strong>{{ order.tracking_number }}</strong></p>
+          <a href="#" class="btn btn-outline-primary btn-sm">Track Package</a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function downloadInvoice(orderId) {
+  // Replace with real invoice generation URL if available
+  window.open(`/download_invoice/${orderId}`, '_blank');
+}
+</script>
+{% endblock %}

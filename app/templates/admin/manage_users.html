@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Dream & Drape Admin{% endblock %}
+
+{% block content %}
+<h2>Manage Users</h2>
+<table class="table table-striped table-bordered admin-table selectable">
+  <thead>
+    <tr>
+      <th>Username</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Admin</th>
+      <th>Active</th>
+      <th>Created At</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users.items %}
+    <tr data-id="{{ user.id }}">
+      <td>{{ user.username }}</td>
+      <td>{{ user.get_full_name() }}</td>
+      <td>{{ user.email }}</td>
+      <td>{% if user.is_admin %}<span class="badge bg-warning">Yes</span>{% else %}No{% endif %}</td>
+      <td>{% if user.is_active %}<span class="badge bg-success">Yes</span>{% else %}No{% endif %}</td>
+      <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+      <td>
+        <a href="{{ url_for('admin.view_user', id=user.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+        <a href="{{ url_for('admin.edit_user', id=user.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="text-center">No users found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<nav aria-label="Users pagination">
+  <ul class="pagination justify-content-center">
+    {% if users.has_prev %}
+      <li class="page-item"><a class="page-link" href="{{ url_for('admin.manage_users', page=users.prev_num) }}">Previous</a></li>
+    {% endif %}
+    {% for p in users.iter_pages() %}
+      {% if p %}
+        <li class="page-item {% if p == users.page %}active{% endif %}"><a class="page-link" href="{{ url_for('admin.manage_users', page=p) }}">{{ p }}</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endfor %}
+    {% if users.has_next %}
+      <li class="page-item"><a class="page-link" href="{{ url_for('admin.manage_users', page=users.next_num) }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endblock %}

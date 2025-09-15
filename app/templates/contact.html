@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us - Dream & Drape{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Page Header -->
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="display-title">Contact Us</h1>
+            <p class="lead">We'd love to hear from you. Get in touch with us!</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Contact Information -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
+                    <h5>Visit Our Store</h5>
+                    <p class="text-muted">
+                        Dream & Drape Boutique<br>
+                        123, Fashion Street<br>
+                        Mumbai, Maharashtra 400001<br>
+                        India
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-phone fa-3x text-primary mb-3"></i>
+                    <h5>Call Us</h5>
+                    <p class="text-muted">
+                        <strong>Phone:</strong> +91 98765 43210<br>
+                        <strong>WhatsApp:</strong> +91 98765 43210<br>
+                        <strong>Toll Free:</strong> 1800-123-4567
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-envelope fa-3x text-primary mb-3"></i>
+                    <h5>Email Us</h5>
+                    <p class="text-muted">
+                        <strong>General:</strong> info@dreamdrape.com<br>
+                        <strong>Support:</strong> support@dreamdrape.com<br>
+                        <strong>Orders:</strong> orders@dreamdrape.com
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Form and Business Hours -->
+    <div class="row mt-5">
+        <!-- Contact Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Send us a Message</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control", required=True) }}
+                                <div class="invalid-feedback">Please provide your name.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.email.label(class="form-label") }}
+                                {{ form.email(class="form-control", required=True) }}
+                                <div class="invalid-feedback">Please provide a valid email.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.phone.label(class="form-label") }}
+                                {{ form.phone(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.subject.label(class="form-label") }}
+                                {{ form.subject(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.message.label(class="form-label") }}
+                            {{ form.message(class="form-control", rows="6", required=True) }}
+                            <div class="invalid-feedback">Please provide your message.</div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Hours and Additional Info -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Business Hours</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Monday - Friday:</span>
+                        <span>9:00 AM - 8:00 PM</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Saturday:</span>
+                        <span>9:00 AM - 6:00 PM</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Sunday:</span>
+                        <span>11:00 AM - 5:00 PM</span>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            We typically respond within 24 hours
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Support</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="tel:+919876543210" class="btn btn-outline-primary">
+                            <i class="fas fa-phone"></i> Call Now
+                        </a>
+                        <a href="https://wa.me/919876543210" target="_blank" class="btn btn-outline-success">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </a>
+                        <a href="mailto:support@dreamdrape.com" class="btn btn-outline-info">
+                            <i class="fas fa-envelope"></i> Email Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="display-title text-center mb-4">Frequently Asked Questions</h3>
+            
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faq1">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                            What is your return policy?
+                        </button>
+                    </h2>
+                    <div id="collapse1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            We offer a 30-day return policy for all items in original condition with tags attached. 
+                            Return shipping is free for defective items, and a small fee applies for exchanges or returns due to size/fit issues.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faq2">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                            How long does shipping take?
+                        </button>
+                    </h2>
+                    <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Standard shipping takes 3-5 business days within India. Express shipping (1-2 business days) is available for major cities. 
+                            Free shipping is available on orders above ₹999.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faq3">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                            Do you offer international shipping?
+                        </button>
+                    </h2>
+                    <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Currently, we ship within India only. However, we're working on expanding our shipping to international destinations. 
+                            Please check back soon or contact us for updates.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faq4">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4">
+                            What payment methods do you accept?
+                        </button>
+                    </h2>
+                    <div id="collapse4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            We accept all major credit and debit cards, UPI, net banking, digital wallets, and cash on delivery. 
+                            All payments are processed securely through our payment partners.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faq5">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5">
+                            How do I track my order?
+                        </button>
+                    </h2>
+                    <div id="collapse5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Once your order is shipped, you'll receive a tracking number via email and SMS. 
+                            You can also track your order by logging into your account and visiting the "My Orders" section.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Social Media -->
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <h4>Follow Us</h4>
+            <p class="text-muted">Stay updated with our latest collections and offers</p>
+            
+            <div class="social-links">
+                <a href="#" class="btn btn-outline-primary me-2 mb-2">
+                    <i class="fab fa-facebook-f"></i> Facebook
+                </a>
+                <a href="#" class="btn btn-outline-info me-2 mb-2">
+                    <i class="fab fa-instagram"></i> Instagram
+                </a>
+                <a href="#" class="btn btn-outline-primary me-2 mb-2">
+                    <i class="fab fa-twitter"></i> Twitter
+                </a>
+                <a href="#" class="btn btn-outline-danger mb-2">
+                    <i class="fab fa-youtube"></i> YouTube
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Phone number validation
+$('#phone').on('input', function() {
+    const phone = $(this).val();
+    if (phone && !/^[0-9]{10}$/.test(phone.replace(/\D/g, ''))) {
+        this.setCustomValidity('Please enter a valid 10-digit phone number');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+// Success message after form submission
+{% if request.method == 'POST' %}
+    showNotification('Message sent successfully! We\'ll get back to you soon.', 'success');
+{% endif %}
+</script>
+{% endblock %}

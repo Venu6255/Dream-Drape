@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dream & Drape - Elegant Fashion for Every Occasion{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/logo.jpg') }}">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Dream & Drape - Your destination for elegant traditional and contemporary fashion. Shop anarkalis, lehengas, sarees, kurtis and more.">
+    <meta name="keywords" content="fashion, traditional wear, anarkali, lehenga, saree, kurti, indian wear, ethnic wear, women fashion">
+    <meta name="author" content="Dream & Drape">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="{% block og_title %}Dream & Drape - Elegant Fashion{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Your destination for elegant traditional and contemporary fashion{% endblock %}">
+    <meta property="og:image" content="{{ url_for('static', filename='images/logo.jpg', _external=True) }}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:type" content="website">
+    
+    <!-- CSRF Token Meta Tag -->
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    
+    <!-- Additional CSS -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
+        <div class="container">
+            <!-- Brand -->
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Dream & Drape" class="logo-img me-2">
+                <span class="brand-text">Dream & Drape</span>
+            </a>
+
+            
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- Navigation Items -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.index') }}">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="categoriesDropdown" role="button" data-bs-toggle="dropdown">
+                            Categories
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('main.products') }}">All Products</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.products', category='New Arrivals') }}">New Arrivals</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.products', category='Anarkali Suits') }}">Anarkali Suits</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.products', category='Sarees') }}">Sarees</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.products', category='Kurtis') }}">Kurtis</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.products', category='Lehenga') }}">Lehenga</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.products', category='Best Sellers') }}">Best Sellers</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.products', category='Sale') }}">Sale</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.about') }}">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.contact') }}">Contact</a>
+                    </li>
+                </ul>
+                
+                <!-- Search Form -->
+                <form class="d-flex me-3" method="GET" action="{{ url_for('main.products') }}">
+                    <div class="input-group">
+                        <input class="form-control" type="search" name="search" placeholder="Search products..." value="{{ request.args.get('search', '') }}">
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- User Actions -->
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                        <!-- Cart -->
+                        <li class="nav-item position-relative me-2">
+                            <a class="nav-link" href="{{ url_for('main.cart') }}">
+                                <i class="fas fa-shopping-cart fa-lg"></i>
+                                <span class="cart-count" id="cart-count" style="display: none;">0</span>
+                            </a>
+                        </li>
+                        
+                        <!-- Wishlist -->
+                        <li class="nav-item position-relative me-3">
+                            <a class="nav-link" href="{{ url_for('main.wishlist') }}">
+                                <i class="fas fa-heart fa-lg"></i>
+                                <span class="wishlist-count">{{ current_user.wishlist_items|length if current_user.wishlist_items else '' }}</span>
+                            </a>
+                        </li>
+                        
+                        <!-- User Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user"></i> {{ current_user.first_name }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.my_orders') }}"><i class="fas fa-shopping-bag me-2"></i>My Orders</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('main.wishlist') }}"><i class="fas fa-heart me-2"></i>Wishlist</a></li>
+                                {% if current_user.is_admin %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-cogs me-2"></i>Admin Panel</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.register') }}">
+                                <i class="fas fa-user-plus"></i> Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Dream & Drape" height="40" class="me-2">
+                        <h5 class="brand-text text-white">Dream & Drape</h5>
+                    </div>
+                    <p class="text-light">
+                        Your destination for elegant traditional and contemporary fashion. 
+                        Discover beautiful anarkalis, stunning lehengas, graceful sarees, and comfortable kurtis.
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="text-white me-3"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-pinterest"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h6 class="text-white mb-3">Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('main.index') }}" class="text-light text-decoration-none">Home</a></li>
+                        <li><a href="{{ url_for('main.products') }}" class="text-light text-decoration-none">Products</a></li>
+                        <li><a href="{{ url_for('main.products', category='New Arrivals') }}" class="text-light text-decoration-none">New Arrivals</a></li>
+                        <li><a href="{{ url_for('main.products', category='Best Sellers') }}" class="text-light text-decoration-none">Best Sellers</a></li>
+                        <li><a href="{{ url_for('main.products', category='Sale') }}" class="text-light text-decoration-none">Sale</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h6 class="text-white mb-3">Categories</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('main.products', category='Anarkali Suits') }}" class="text-light text-decoration-none">Anarkali Suits</a></li>
+                        <li><a href="{{ url_for('main.products', category='Sarees') }}" class="text-light text-decoration-none">Sarees</a></li>
+                        <li><a href="{{ url_for('main.products', category='Kurtis') }}" class="text-light text-decoration-none">Kurtis</a></li>
+                        <li><a href="{{ url_for('main.products', category='Lehenga') }}" class="text-light text-decoration-none">Lehenga</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h6 class="text-white mb-3">Customer Care</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('main.contact') }}" class="text-light text-decoration-none">Contact Us</a></li>
+                        <li><a href="{{ url_for('main.about') }}" class="text-light text-decoration-none">About Us</a></li>
+                        <li><a href="{{ url_for('main.terms') }}" class="text-light text-decoration-none">Terms & Conditions</a></li>
+                        <li><a href="{{ url_for('main.privacy') }}" class="text-light text-decoration-none">Privacy Policy</a></li>
+                        {% if current_user.is_authenticated %}
+                            <li><a href="{{ url_for('auth.my_orders') }}" class="text-light text-decoration-none">Track Orders</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h6 class="text-white mb-3">Contact Info</h6>
+                    <ul class="list-unstyled text-light">
+                        <li><i class="fas fa-envelope me-2"></i>info@dreamdrape.com</li>
+                        <li><i class="fas fa-phone me-2"></i>+91 98765 43210</li>
+                        <li><i class="fab fa-whatsapp me-2"></i>+91 98765 43210</li>
+                        <li><i class="fas fa-clock me-2"></i>Mon-Sat: 9AM-8PM</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="text-light mb-0">
+                        &copy; 2025 Dream & Drape. All rights reserved.
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="payment-icons">
+                        <i class="fab fa-cc-visa fa-2x me-2 text-light"></i>
+                        <i class="fab fa-cc-mastercard fa-2x me-2 text-light"></i>
+                        <i class="fab fa-cc-paypal fa-2x me-2 text-light"></i>
+                        <i class="fas fa-university fa-2x text-light" title="Net Banking"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Additional JS -->
+    {% block extra_js %}{% endblock %}
+    
+    <!-- Update cart count on page load -->
+    <script>
+        $(document).ready(function() {
+            {% if current_user.is_authenticated %}
+                updateCartCount();
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart - Dream & Drape{% endblock %}
+
+{% block content %}
+<body class="cart-page">
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-title mb-4">Shopping Cart</h1>
+        </div>
+    </div>
+
+    {% if cart_items %}
+        <div class="row">
+            <!-- Cart Items -->
+            <div class="col-lg-8">
+                {% for item in cart_items %}
+                    <div class="cart-item mb-3">
+                        <div class="row align-items-center">
+                            <!-- Product Image -->
+                            <div class="col-md-3">
+                                <img src="{{ url_for('static', filename='images/products/' + (item.product.image_url or 'placeholder.jpg')) }}" 
+                                     class="img-fluid rounded" alt="{{ item.product.name }}"
+                                     onerror="this.src='{{ url_for('static', filename='images/placeholder.jpg') }}'">
+                            </div>
+                            
+                            <!-- Product Details -->
+                            <div class="col-md-6">
+                                <h5>{{ item.product.name }}</h5>
+                                <p class="text-muted">{{ item.product.description[:100] }}...</p>
+                                
+                                {% if item.size %}
+                                    <small class="text-muted d-block">Size: {{ item.size }}</small>
+                                {% endif %}
+                                {% if item.color %}
+                                    <small class="text-muted d-block">Color: {{ item.color }}</small>
+                                {% endif %}
+                                
+                                <div class="price mt-2">
+                                    <span class="h6">₹{{ "%.2f"|format(item.product.price) }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Quantity and Actions -->
+                            <div class="col-md-3 text-end">
+                                <!-- Quantity Controls -->
+                                <form method="POST" action="{{ url_for('main.update_cart') }}" class="d-inline">
+                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                    <div class="quantity-controls mb-3">
+                                        <button type="button" class="quantity-btn quantity-decrease" onclick="decreaseQuantity(this)">-</button>
+                                        <input type="number" name="quantity" value="{{ item.quantity }}" 
+                                               min="1" max="10" class="quantity-input" onchange="this.form.submit()">
+                                        <button type="button" class="quantity-btn quantity-increase" onclick="increaseQuantity(this)">+</button>
+                                    </div>
+                                </form>
+                                
+                                <!-- Item Total -->
+                                <div class="item-total mb-2">
+                                    <strong>₹{{ "%.2f"|format(item.get_total()) }}</strong>
+                                </div>
+                                
+                                <!-- Remove Button -->
+                                <a href="{{ url_for('main.remove_from_cart', item_id=item.id) }}" 
+                                   class="btn btn-outline-danger btn-sm" 
+                                   onclick="return confirm('Remove this item from cart?')">
+                                    <i class="fas fa-trash"></i> Remove
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                
+                <!-- Continue Shopping -->
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('main.products') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Continue Shopping
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Cart Summary -->
+            <div class="col-lg-4">
+                <div class="order-summary">
+                    <h4 class="mb-4">Order Summary</h4>
+                    
+                    <div class="summary-item d-flex justify-content-between mb-2">
+                        <span>Subtotal ({{ cart_items|length }} items):</span>
+                        <span>₹{{ "%.2f"|format(total) }}</span>
+                    </div>
+                    
+                    <div class="summary-item d-flex justify-content-between mb-2">
+                        <span>Shipping:</span>
+                        <span>
+                            {% if total >= 999 %}
+                                <span class="text-success">Free</span>
+                            {% else %}
+                                ₹50.00
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="summary-item d-flex justify-content-between mb-2">
+                        <span>Tax:</span>
+                        <span>₹{{ "%.2f"|format(total * 0.18) }}</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="total-row d-flex justify-content-between">
+                        <strong>Total:</strong>
+                        <strong>₹{{ "%.2f"|format(total + (50 if total < 999 else 0) + (total * 0.18)) }}</strong>
+                    </div>
+                    
+                    <!-- Free Shipping Message -->
+                    {% if total < 999 %}
+                        <div class="alert alert-info mt-3">
+                            <small>
+                                <i class="fas fa-shipping-fast"></i> 
+                                Add ₹{{ "%.2f"|format(999 - total) }} more for free shipping!
+                            </small>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Checkout Button -->
+                    <div class="d-grid mt-4">
+                        <a href="{{ url_for('main.checkout') }}" class="btn btn-primary btn-lg">
+                            Proceed to Checkout
+                        </a>
+                    </div>
+                    
+                    <!-- Security Badges -->
+                    <div class="security-badges text-center mt-4">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt"></i> Secure Checkout
+                        </small>
+                        <div class="payment-icons mt-2">
+                            <i class="fab fa-cc-visa fa-2x me-2 text-muted"></i>
+                            <i class="fab fa-cc-mastercard fa-2x me-2 text-muted"></i>
+                            <i class="fab fa-cc-paypal fa-2x text-muted"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recommended Products -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <h3 class="display-title text-center mb-4">You Might Also Like</h3>
+                <!-- This would show recommended products based on cart items -->
+            </div>
+        </div>
+        
+    {% else %}
+        <!-- Empty Cart -->
+        <div class="row">
+            <div class="col-12 text-center">
+                <div class="empty-cart py-5">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-4"></i>
+                    <h3>Your cart is empty</h3>
+                    <p class="text-muted mb-4">Looks like you haven't added anything to your cart yet</p>
+                    <a href="{{ url_for('main.products') }}" class="btn btn-primary btn-lg">
+                        Start Shopping
+                    </a>
+                </div>
+                
+                <!-- Recently Viewed or Featured Products -->
+                <div class="mt-5">
+                    <h4>Featured Products</h4>
+                    <p class="text-muted">Check out these popular items</p>
+                    <a href="{{ url_for('main.products', category='Best Sellers') }}" class="btn btn-outline-primary">
+                        View Best Sellers
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function increaseQuantity(button) {
+    const input = $(button).siblings('.quantity-input');
+    const currentVal = parseInt(input.val()) || 1;
+    const maxVal = parseInt(input.attr('max')) || 10;
+    
+    if (currentVal < maxVal) {
+        input.val(currentVal + 1);
+        input.closest('form').submit();
+    }
+}
+
+function decreaseQuantity(button) {
+    const input = $(button).siblings('.quantity-input');
+    const currentVal = parseInt(input.val()) || 1;
+    const minVal = parseInt(input.attr('min')) || 1;
+    
+    if (currentVal > minVal) {
+        input.val(currentVal - 1);
+        input.closest('form').submit();
+    }
+}
+
+// Update quantity on direct input
+$('.quantity-input').on('change', function() {
+    const value = parseInt($(this).val());
+    const min = parseInt($(this).attr('min')) || 1;
+    const max = parseInt($(this).attr('max')) || 10;
+    
+    if (isNaN(value) || value < min) {
+        $(this).val(min);
+    } else if (value > max) {
+        $(this).val(max);
+    }
+    
+    $(this).closest('form').submit();
+});
+</script>
+{% endblock %}
