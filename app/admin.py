@@ -552,6 +552,12 @@ def api_weekly_revenue():
 def change_password():
     """Allow admin to change their own password."""
     form = ChangePasswordForm()
+
+    # Fetch the same stats your dashboard provides
+    pending_orders = Order.query.filter_by(status='Pending').all()
+    total_users    = User.query.count()
+    # Add any other context variables needed by your admin layout
+
     if form.validate_on_submit():
         old = form.old_password.data
         new = form.new_password.data
@@ -564,4 +570,11 @@ def change_password():
             db.session.commit()
             flash('Password updated successfully!', 'success')
             return redirect(url_for('admin.dashboard'))
-    return render_template('admin/change_password.html', form=form)
+
+    return render_template(
+        'admin/change_password.html',
+        form=form,
+        pending_orders=pending_orders,
+        total_users=total_users
+        # Pass any other variables your admin_dashboard.html needs
+    )
