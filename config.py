@@ -26,6 +26,6 @@ class Config:
     # Session settings
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     
-    # Admin credentials
-    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') 
-    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')  
+    # Admin credentials (must be provided via environment)
+    ADMIN_EMAIL = os.environ['ADMIN_EMAIL']
+    ADMIN_PASSWORD = os.environ['ADMIN_PASSWORD']
