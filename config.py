@@ -27,5 +27,5 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     
     # Admin credentials
-    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'admin@dreamdrape.com'
-    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'admin123'
+    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') 
+    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')  
