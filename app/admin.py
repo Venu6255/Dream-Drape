@@ -4,7 +4,10 @@ from functools import wraps
 from app.models import Product, Category, User, Order, Review, Newsletter, ContactMessage
 from app.forms import AdminProductForm, AdminCategoryForm, AdminOrderForm, AdminUserForm
 from app.utils import save_picture, delete_picture
+from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
+from app.models import User
+from app.forms import ChangePasswordForm
 import os
 
 admin = Blueprint('admin', __name__)
@@ -542,3 +545,23 @@ def api_weekly_revenue():
     labels = [d.strftime('%a') for d in dates]  # Mon, Tue etc.
 
     return jsonify({'labels': labels, 'totals': totals})
+
+@admin.route('/change-password', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def change_password():
+    """Allow admin to change their own password."""
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        old = form.old_password.data
+        new = form.new_password.data
+        # Verify current password
+        if not check_password_hash(current_user.password_hash, old):
+            flash('Current password is incorrect.', 'danger')
+        else:
+            # Update to new password
+            current_user.password_hash = generate_password_hash(new)
+            db.session.commit()
+            flash('Password updated successfully!', 'success')
+            return redirect(url_for('admin.dashboard'))
+    return render_template('admin/change_password.html', form=form)

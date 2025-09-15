@@ -151,3 +151,13 @@ class AdminUserForm(FlaskForm):
     is_admin = BooleanField('Admin User')
     is_active = BooleanField('Active User', default=True)
     submit = SubmitField('Save User')
+
+class ChangePasswordForm(FlaskForm):
+    old_password = PasswordField('Current Password', validators=[DataRequired()])
+    new_password = PasswordField('New Password', validators=[
+        DataRequired(),
+        Length(min=8, message='Use at least 8 characters.'),
+        EqualTo('confirm', message='Passwords must match.')
+    ])
+    confirm      = PasswordField('Confirm New Password', validators=[DataRequired()])
+    submit       = SubmitField('Update Password')
