@@ -138,9 +138,6 @@
                 <button id="darkModeToggle" class="btn btn-outline-secondary btn-sm ms-2">
                     <i class="fas fa-moon"></i>
                 </button>
-                <a href="{{ url_for('admin.change_password') }}" class="btn btn-outline-secondary btn-sm ms-2">
-                    <i class="fas fa-key"></i> Change Password
-                </a>
                 <div class="admin-profile-dropdown">
                     <button class="admin-profile-btn">
                         <div class="admin-profile-avatar">
@@ -161,7 +158,7 @@
                 </button>
             </div>
             <div class="notifications-body">
-                {% if pending_orders|length > 0 %}
+                {% if pending_orders > 0 %}
                 <div class="notification-item urgent">
                     <i class="fas fa-shopping-bag text-warning"></i>
                     <div class="notification-content">
