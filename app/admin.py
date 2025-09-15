@@ -6,7 +6,7 @@ from app.forms import AdminProductForm, AdminCategoryForm, AdminOrderForm, Admin
 from app.utils import save_picture, delete_picture
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
-from app.models import User
+from app.models import User, Review
 from app.forms import ChangePasswordForm
 import os
 
@@ -556,6 +556,7 @@ def change_password():
     # Fetch the same stats your dashboard provides
     pending_orders = Order.query.filter_by(status='Pending').all()
     total_users    = User.query.count()
+    pending_reviews = Review.query.filter_by(status='Pending').all()
     # Add any other context variables needed by your admin layout
 
     if form.validate_on_submit():
@@ -575,6 +576,7 @@ def change_password():
         'admin/change_password.html',
         form=form,
         pending_orders=pending_orders,
-        total_users=total_users
+        total_users=total_users,
+        pending_reviews=pending_reviews
         # Pass any other variables your admin_dashboard.html needs
     )

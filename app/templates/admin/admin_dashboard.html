@@ -161,7 +161,7 @@
                 </button>
             </div>
             <div class="notifications-body">
-                {% if pending_orders > 0 %}
+                {% if pending_orders|length > 0 %}
                 <div class="notification-item urgent">
                     <i class="fas fa-shopping-bag text-warning"></i>
                     <div class="notification-content">
