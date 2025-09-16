@@ -1,9 +1,12 @@
 from app import create_app
+from commands import register_commands
 import os
 import logging
 from logging.handlers import RotatingFileHandler
 
 app = create_app()
+
+register_commands(app)
 
 if __name__ == '__main__':
     # Create necessary directories

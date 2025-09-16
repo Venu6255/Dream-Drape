@@ -7,7 +7,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
 from config import config
-from commands import register_commands
 import logging
 import os
 
@@ -71,6 +70,5 @@ def create_app(config_name=None):
         
         app.logger.setLevel(logging.INFO)
         app.logger.info('Dream-Drape startup')
-    register_commands(app)
     
     return app
