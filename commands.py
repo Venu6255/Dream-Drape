@@ -57,7 +57,7 @@ def create_sample():
 @click.command()
 @click.option('--days', default=30, help='Number of days to keep logs')
 @with_appcontext
-def cleanup_logs():
+def cleanup_logs(days):
     """Clean up old audit logs."""
     cutoff_date = datetime.utcnow() - timedelta(days=int(days))
     
