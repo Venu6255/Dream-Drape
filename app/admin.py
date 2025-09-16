@@ -29,9 +29,19 @@ def admin_required(f):
 @admin.route('/')
 @login_required
 @admin_required
-@cache.cached(timeout=60)  # Cache dashboard for 1 minute
 def dashboard():
     """Admin dashboard with statistics and security monitoring"""
+    # Initialize default values to prevent undefined errors
+    total_products = 0
+    total_users = 0
+    total_orders = 0
+    pending_orders = 0
+    recent_orders = []
+    low_stock_products = []
+    pending_reviews = 0
+    unread_messages = 0
+    recent_failed_logins = 0
+    
     try:
         # Get statistics
         total_products = Product.query.count()
@@ -56,21 +66,21 @@ def dashboard():
             AuditLog.created_at >= datetime.utcnow() - timedelta(hours=24)
         ).count()
         
-        return render_template('admin/admin_dashboard.html',
-                             total_products=total_products,
-                             total_users=total_users,
-                             total_orders=total_orders,
-                             pending_orders=pending_orders,
-                             recent_orders=recent_orders,
-                             low_stock_products=low_stock_products,
-                             pending_reviews=pending_reviews,
-                             unread_messages=unread_messages,
-                             recent_failed_logins=recent_failed_logins)
-    
     except Exception as e:
         current_app.logger.error(f"Admin dashboard error: {e}")
-        flash('Error loading dashboard data.', 'error')
-        return render_template('admin/admin_dashboard.html')
+        flash('Error loading some dashboard data.', 'warning')
+    
+    # Always return with all required variables
+    return render_template('admin/admin_dashboard.html',
+                         total_products=total_products,
+                         total_users=total_users,
+                         total_orders=total_orders,
+                         pending_orders=pending_orders,
+                         recent_orders=recent_orders,
+                         low_stock_products=low_stock_products,
+                         pending_reviews=pending_reviews,
+                         unread_messages=unread_messages,
+                         recent_failed_logins=recent_failed_logins)
 
 # Product Management with Enhanced Security
 @admin.route('/products')
@@ -256,6 +266,78 @@ def delete_product(id):
         flash('Error deleting product. Please try again.', 'error')
     
     return redirect(url_for('admin.manage_products'))
+
+@admin.route('/categories')
+@login_required
+@admin_required
+def manage_categories():
+    """Manage categories page"""
+    categories = Category.query.order_by(Category.name).all()
+    return render_template('admin/manage_categories.html', categories=categories)
+
+@admin.route('/category/add', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_category():
+    """Add new category"""
+    form = AdminCategoryForm()
+    
+    if form.validate_on_submit():
+        category = Category(
+            name=form.name.data,
+            description=form.description.data,
+            is_active=form.is_active.data
+        )
+        
+        # Handle image upload
+        if form.image_file.data:
+            picture_file = save_picture(form.image_file.data, 'images/categories')
+            category.image_url = picture_file
+        
+        db.session.add(category)
+        db.session.commit()
+        
+        flash('Category added successfully!', 'success')
+        return redirect(url_for('admin.manage_categories'))
+    
+    return render_template('admin/add_edit_category.html', form=form, title='Add Category')
+
+@admin.route('/reviews')
+@login_required
+@admin_required
+def manage_reviews():
+    """Manage product reviews"""
+    page = request.args.get('page', 1, type=int)
+    status = request.args.get('status', 'pending')  # default to pending reviews
+
+    query = Review.query
+
+    if status == 'pending':
+        query = query.filter_by(is_approved=False)
+    elif status == 'approved':
+        query = query.filter_by(is_approved=True)
+
+    reviews = query.order_by(Review.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+
+    return render_template('admin/manage_reviews.html', reviews=reviews, current_status=status)
+
+@admin.route('/messages')
+@login_required
+@admin_required
+def manage_messages():
+    """Manage contact messages"""
+    page = request.args.get('page', 1, type=int)
+    messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    return render_template('admin/manage_messages.html', messages=messages)
+
+@admin.route('/newsletter')
+@login_required
+@admin_required
+def manage_newsletter():
+    """Manage newsletter subscribers"""
+    page = request.args.get('page', 1, type=int)
+    subscribers = Newsletter.query.order_by(Newsletter.subscribed_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    return render_template('admin/manage_newsletter.html', subscribers=subscribers)
 
 # Enhanced Order Management
 @admin.route('/orders')

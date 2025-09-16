@@ -1,11 +1,17 @@
 import os
 import secrets
+from werkzeug.utils import secure_filename
 from PIL import Image
 from flask import current_app
 import uuid
 from datetime import datetime
-import magic
 import bleach
+try:
+    import magic
+    MAGIC_AVAILABLE = True
+except ImportError:
+    MAGIC_AVAILABLE = False
+    print("Warning: python-magic not available. File validation will be limited.")
 
 def save_picture(form_picture, folder):
     """Save uploaded picture with enhanced security validation"""
@@ -55,6 +61,12 @@ def save_picture(form_picture, folder):
 
 def validate_image_file(file_storage):
     """Validate image file using magic numbers"""
+    if not MAGIC_AVAILABLE:
+        # Fallback validation without magic
+        filename = file_storage.filename.lower() if file_storage.filename else ""
+        allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif'}
+        return any(filename.endswith(ext) for ext in allowed_extensions)
+    
     try:
         # Read first 1024 bytes to check file signature
         file_storage.seek(0)
@@ -75,6 +87,64 @@ def validate_image_file(file_storage):
         
     except Exception:
         return False
+
+def validate_file_upload(file_storage):
+    """Validate uploaded file for security"""
+    if not file_storage:
+        return False, "No file provided"
+    
+    if not file_storage.filename:
+        return False, "No filename provided"
+    
+    # Check file size (5MB limit)
+    file_storage.seek(0, os.SEEK_END)
+    file_size = file_storage.tell()
+    file_storage.seek(0)
+    
+    max_size = 5 * 1024 * 1024  # 5MB
+    if file_size > max_size:
+        return False, f"File size exceeds {max_size / (1024*1024):.1f}MB limit"
+    
+    if file_size == 0:
+        return False, "File is empty"
+    
+    # Validate filename
+    filename = secure_filename(file_storage.filename)
+    if not filename:
+        return False, "Invalid filename"
+    
+    # Check file extension
+    allowed_extensions = {'jpg', 'jpeg', 'png', 'gif'}
+    if '.' not in filename:
+        return False, "File must have an extension"
+    
+    extension = filename.rsplit('.', 1)[1].lower()
+    if extension not in allowed_extensions:
+        return False, f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}"
+    
+    # Validate file content (simplified for Windows)
+    if MAGIC_AVAILABLE:
+        try:
+            file_storage.seek(0)
+            header = file_storage.read(1024)
+            file_storage.seek(0)
+            
+            file_type = magic.from_buffer(header, mime=True)
+            allowed_mime_types = {
+                'image/jpeg',
+                'image/png', 
+                'image/gif'
+            }
+            
+            if file_type not in allowed_mime_types:
+                return False, f"File content doesn't match extension. Detected: {file_type}"
+                
+        except Exception as e:
+            current_app.logger.error(f"File validation error: {e}")
+            # Don't fail completely, just warn
+            pass
+    
+    return True, "File is valid"
 
 def remove_exif(image):
     """Remove EXIF data from image for security"""

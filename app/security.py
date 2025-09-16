@@ -269,3 +269,8 @@ def check_suspicious_activity(user_id=None, ip_address=None):
     except Exception as e:
         current_app.logger.error(f"Suspicious activity check error: {e}")
         return False, "Unable to check for suspicious activity"
+
+def mask_sensitive_data(data, mask_char='*'):
+    if not data or len(data) <= 4:
+        return mask_char * len(data) if data else ""
+    return data[:2] + mask_char * (len(data) - 4) + data[-2:]

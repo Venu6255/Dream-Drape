@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Too Many Requests</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+    .error-container { max-width: 500px; margin: auto; }
+    .error-code { font-size: 72px; color: #e74c3c; }
+    .error-message { font-size: 24px; margin: 20px 0; }
+    .btn { padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <div class="error-code">429</div>
+    <h1 class="error-message">Too Many Requests</h1>
+    <p>You’ve sent too many requests in a short period. Please wait a moment and try again.</p>
+    <a href="{{ url_for('main.index') }}" class="btn">Return Home</a>
+  </div>
+</body>
+</html>

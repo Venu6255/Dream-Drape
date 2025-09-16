@@ -20,7 +20,7 @@ gunicorn==21.2.0
 bleach==6.1.0
 cryptography==41.0.7
 sqlalchemy-utils==0.41.1
-python-magic==0.4.27
+python-magic-bin==0.4.14
 pytest==7.4.0
 pytest-cov==4.1.0
 
