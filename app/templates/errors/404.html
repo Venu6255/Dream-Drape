@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - Dream-Drape</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        .error-container { max-width: 500px; margin: 0 auto; }
+        .error-code { font-size: 72px; color: #e74c3c; margin-bottom: 20px; }
+        .error-message { font-size: 24px; margin-bottom: 30px; }
+        .btn { padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-code">404</div>
+        <h1 class="error-message">Page Not Found</h1>
+        <p>The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
+        <div>
+            <a href="{{ url_for('main.index') }}" class="btn">Go Home</a>
+            <a href="{{ url_for('main.products') }}" class="btn">Browse Products</a>
+        </div>
+    </div>
+</body>
+</html>

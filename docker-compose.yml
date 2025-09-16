@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://dreamdrape:password@db:5432/dreamdrape
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./app/static/uploads:/app/app/static/uploads
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - dreamdrape-network
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: dreamdrape
+      POSTGRES_USER: dreamdrape
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - dreamdrape-network
+
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - dreamdrape-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+      - ./app/static:/var/www/static
+    depends_on:
+      - web
+    restart: unless-stopped
+    networks:
+      - dreamdrape-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  dreamdrape-network:
+    driver: bridge

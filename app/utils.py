@@ -4,233 +4,385 @@ from PIL import Image
 from flask import current_app
 import uuid
 from datetime import datetime
+import magic
+import bleach
 
 def save_picture(form_picture, folder):
-    """Save uploaded picture to specified folder"""
-    random_hex = secrets.token_hex(8)
-    _, f_ext = os.path.splitext(form_picture.filename)
-    picture_fn = random_hex + f_ext
-    picture_path = os.path.join(current_app.root_path, 'static', folder, picture_fn)
-    
-    # Create directory if it doesn't exist
-    os.makedirs(os.path.dirname(picture_path), exist_ok=True)
-    
-    # Resize image
-    output_size = (800, 800)
-    img = Image.open(form_picture)
-    img.thumbnail(output_size)
-    img.save(picture_path)
-    
-    return picture_fn
+    """Save uploaded picture with enhanced security validation"""
+    try:
+        # Validate file type using python-magic
+        if not validate_image_file(form_picture):
+            raise ValueError("Invalid file type")
+        
+        # Generate secure filename
+        random_hex = secrets.token_hex(8)
+        _, f_ext = os.path.splitext(form_picture.filename)
+        
+        # Validate file extension
+        allowed_extensions = {'.png', '.jpg', '.jpeg', '.gif'}
+        if f_ext.lower() not in allowed_extensions:
+            raise ValueError("File extension not allowed")
+        
+        picture_fn = random_hex + f_ext.lower()
+        picture_path = os.path.join(current_app.root_path, 'static', folder, picture_fn)
+        
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(picture_path), exist_ok=True)
+        
+        # Open and validate image
+        img = Image.open(form_picture)
+        
+        # Remove EXIF data for security
+        if hasattr(img, 'getexif'):
+            img = remove_exif(img)
+        
+        # Resize image to prevent large file attacks
+        max_size = (1200, 1200)
+        img.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
+        # Convert to RGB if necessary
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        
+        # Save with optimization
+        img.save(picture_path, optimize=True, quality=85)
+        
+        return picture_fn
+        
+    except Exception as e:
+        current_app.logger.error(f"Image save error: {e}")
+        raise ValueError("Failed to save image")
+
+def validate_image_file(file_storage):
+    """Validate image file using magic numbers"""
+    try:
+        # Read first 1024 bytes to check file signature
+        file_storage.seek(0)
+        header = file_storage.read(1024)
+        file_storage.seek(0)
+        
+        # Use python-magic to detect actual file type
+        file_type = magic.from_buffer(header, mime=True)
+        
+        allowed_types = {
+            'image/jpeg',
+            'image/png', 
+            'image/gif',
+            'image/webp'
+        }
+        
+        return file_type in allowed_types
+        
+    except Exception:
+        return False
+
+def remove_exif(image):
+    """Remove EXIF data from image for security"""
+    try:
+        # Create a new image without EXIF data
+        data = list(image.getdata())
+        image_without_exif = Image.new(image.mode, image.size)
+        image_without_exif.putdata(data)
+        return image_without_exif
+    except Exception:
+        return image
 
 def delete_picture(picture_fn, folder):
-    """Delete picture from specified folder"""
+    """Safely delete picture from specified folder"""
     if picture_fn:
-        picture_path = os.path.join(current_app.root_path, 'static', folder, picture_fn)
-        if os.path.exists(picture_path):
-            os.remove(picture_path)
+        try:
+            picture_path = os.path.join(current_app.root_path, 'static', folder, picture_fn)
+            if os.path.exists(picture_path):
+                os.remove(picture_path)
+                return True
+        except Exception as e:
+            current_app.logger.error(f"File deletion error: {e}")
+    return False
 
 def generate_order_number():
-    """Generate unique order number"""
+    """Generate cryptographically secure order number"""
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    random_part = str(uuid.uuid4())[:8].upper()
+    random_part = secrets.token_hex(4).upper()
     return f"DD{timestamp}{random_part}"
 
 def format_currency(amount):
-    """Format amount as Indian currency"""
-    return f"₹{amount:,.2f}"
+    """Format amount as Indian currency with validation"""
+    try:
+        if amount is None:
+            return "₹0.00"
+        return f"₹{float(amount):,.2f}"
+    except (ValueError, TypeError):
+        return "₹0.00"
 
 def calculate_discount_percentage(original_price, sale_price):
-    """Calculate discount percentage"""
-    if original_price and original_price > sale_price:
-        return round(((original_price - sale_price) / original_price) * 100)
-    return 0
+    """Calculate discount percentage with validation"""
+    try:
+        if not original_price or not sale_price or original_price <= 0 or sale_price < 0:
+            return 0
+        if original_price > sale_price:
+            return round(((original_price - sale_price) / original_price) * 100)
+        return 0
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0
 
-def allowed_file(filename, allowed_extensions={'png', 'jpg', 'jpeg', 'gif'}):
-    """Check if file extension is allowed"""
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in allowed_extensions
+def allowed_file(filename, allowed_extensions=None):
+    """Check if file extension is allowed with enhanced validation"""
+    if allowed_extensions is None:
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+    
+    if not filename or '.' not in filename:
+        return False
+    
+    extension = filename.rsplit('.', 1)[1].lower()
+    return extension in allowed_extensions
+
+def sanitize_filename(filename):
+    """Sanitize filename for secure storage"""
+    if not filename:
+        return 'unnamed'
+    
+    # Remove path separators and dangerous characters
+    filename = os.path.basename(filename)
+    filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_', '.'))
+    filename = filename.strip()
+    
+    # Limit length
+    if len(filename) > 100:
+        name, ext = os.path.splitext(filename)
+        filename = name[:90] + ext
+    
+    return filename or 'unnamed'
 
 def get_cart_total(cart_items):
-    """Calculate total amount for cart items"""
-    return sum(item.get_total() for item in cart_items)
+    """Calculate total amount for cart items with validation"""
+    try:
+        return sum(item.get_total() for item in cart_items if item and item.get_total())
+    except Exception:
+        return 0.0
 
 def get_cart_count(cart_items):
-    """Get total number of items in cart"""
-    return sum(item.quantity for item in cart_items)
+    """Get total number of items in cart with validation"""
+    try:
+        return sum(item.quantity for item in cart_items if item and item.quantity)
+    except Exception:
+        return 0
 
 def send_email(to, subject, template, **kwargs):
-    """Send email using Flask-Mail"""
+    """Send email using Flask-Mail with enhanced error handling"""
     from flask_mail import Message
     from app import mail
     
-    msg = Message(
-        subject=f'Dream & Drape - {subject}',
-        sender=current_app.config['MAIL_USERNAME'],
-        recipients=[to]
-    )
-    msg.html = template
     try:
+        if not to or not subject:
+            return False
+        
+        msg = Message(
+            subject=f'Dream & Drape - {subject}',
+            sender=current_app.config['MAIL_USERNAME'],
+            recipients=[to] if isinstance(to, str) else to
+        )
+        msg.html = template
         mail.send(msg)
         return True
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        current_app.logger.error(f"Email send error: {e}")
         return False
 
 def create_sample_data():
-    """Create sample products and categories for testing"""
+    """Create sample products and categories for testing with enhanced validation"""
     from app.models import Category, Product, User
     from app import db
     
-    # Create categories
-    categories_data = [
-        {'name': 'New Arrivals', 'description': 'Latest fashion trends'},
-        {'name': 'Anarkali Suits', 'description': 'Elegant Anarkali collection'},
-        {'name': 'Sarees', 'description': 'Traditional and modern sarees'},
-        {'name': 'Kurtis', 'description': 'Comfortable and stylish kurtis'},
-        {'name': 'Lehenga', 'description': 'Bridal and party lehengas'},
-        {'name': 'Best Sellers', 'description': 'Most popular items'},
-        {'name': 'Sale', 'description': 'Discounted products'}
-    ]
+    try:
+        # Create categories with validation
+        categories_data = [
+            {'name': 'New Arrivals', 'description': 'Latest fashion trends'},
+            {'name': 'Anarkali Suits', 'description': 'Elegant Anarkali collection'},
+            {'name': 'Sarees', 'description': 'Traditional and modern sarees'},
+            {'name': 'Kurtis', 'description': 'Comfortable and stylish kurtis'},
+            {'name': 'Lehenga', 'description': 'Bridal and party lehengas'},
+            {'name': 'Best Sellers', 'description': 'Most popular items'},
+            {'name': 'Sale', 'description': 'Discounted products'}
+        ]
+        
+        for cat_data in categories_data:
+            if not Category.query.filter_by(name=cat_data['name']).first():
+                category = Category(**cat_data)
+                db.session.add(category)
+        
+        db.session.commit()
+        
+        # Create sample products with enhanced validation
+        products_data = [
+            {
+                'name': 'Cotton Print Kurti',
+                'description': 'Comfortable cotton kurti perfect for daily wear. Features beautiful prints and breathable fabric for all-day comfort.',
+                'price': 899.0,
+                'original_price': 1299.0,
+                'stock_quantity': 25,
+                'sizes': 'S, M, L, XL, XXL',
+                'colors': 'White, Blue, Pink, Yellow',
+                'material': 'Pure Cotton',
+                'care_instructions': 'Machine wash cold, tumble dry low',
+                'is_new_arrival': True,
+                'is_featured': True,
+                'is_on_sale': True
+            },
+            {
+                'name': 'Designer Silk Saree',
+                'description': 'Premium silk saree with intricate border work. Perfect for weddings and special occasions.',
+                'price': 5999.0,
+                'original_price': 7999.0,
+                'stock_quantity': 8,
+                'sizes': 'One Size',
+                'colors': 'Red, Maroon, Navy Blue, Golden',
+                'material': 'Pure Silk',
+                'care_instructions': 'Dry clean only',
+                'is_featured': True,
+                'is_best_seller': True,
+                'is_on_sale': True
+            },
+            {
+                'name': 'Elegant Pink Anarkali',
+                'description': 'Beautiful pink anarkali with gold work and embellishments. Stunning outfit for festive occasions.',
+                'price': 2999.0,
+                'original_price': 3499.0,
+                'stock_quantity': 12,
+                'sizes': 'S, M, L, XL',
+                'colors': 'Pink, Rose Gold, Peach',
+                'material': 'Georgette with Embroidery',
+                'care_instructions': 'Dry clean recommended',
+                'is_new_arrival': True,
+                'is_featured': True,
+                'is_best_seller': True
+            },
+            {
+                'name': 'Floral Print Anarkali',
+                'description': 'Light and comfortable floral anarkali perfect for casual and semi-formal occasions.',
+                'price': 1999.0,
+                'original_price': 2499.0,
+                'stock_quantity': 18,
+                'sizes': 'S, M, L, XL',
+                'colors': 'White, Pink, Green, Blue',
+                'material': 'Cotton Blend',
+                'care_instructions': 'Machine wash gentle cycle',
+                'is_new_arrival': True,
+                'is_on_sale': True
+            },
+            {
+                'name': 'Royal Blue Lehenga',
+                'description': 'Stunning royal blue lehenga with gold work. Perfect for weddings, receptions, and grand celebrations.',
+                'price': 8999.0,
+                'original_price': 12999.0,
+                'stock_quantity': 6,
+                'sizes': 'S, M, L, XL',
+                'colors': 'Royal Blue, Navy Blue, Midnight Blue',
+                'material': 'Silk with Heavy Embroidery',
+                'care_instructions': 'Dry clean only, store in garment bag',
+                'is_featured': True,
+                'is_best_seller': True,
+                'is_on_sale': True
+            }
+        ]
+        
+        # Get categories for assignment
+        categories = {cat.name: cat for cat in Category.query.all()}
+        
+        for prod_data in products_data:
+            if not Product.query.filter_by(name=prod_data['name']).first():
+                product = Product(**prod_data)
+                product.sku = f"DD{secrets.token_hex(4).upper()}"
+                db.session.add(product)
+                db.session.flush()  # Get the product ID
+                
+                # Assign categories based on product type
+                if 'Anarkali' in product.name:
+                    if 'Anarkali Suits' in categories:
+                        product.categories.append(categories['Anarkali Suits'])
+                elif 'Saree' in product.name:
+                    if 'Sarees' in categories:
+                        product.categories.append(categories['Sarees'])
+                elif 'Kurti' in product.name:
+                    if 'Kurtis' in categories:
+                        product.categories.append(categories['Kurtis'])
+                elif 'Lehenga' in product.name:
+                    if 'Lehenga' in categories:
+                        product.categories.append(categories['Lehenga'])
+                
+                # Assign additional categories based on flags
+                if product.is_new_arrival and 'New Arrivals' in categories:
+                    product.categories.append(categories['New Arrivals'])
+                if product.is_best_seller and 'Best Sellers' in categories:
+                    product.categories.append(categories['Best Sellers'])
+                if product.is_on_sale and 'Sale' in categories:
+                    product.categories.append(categories['Sale'])
+        
+        db.session.commit()
+        current_app.logger.info("Sample data created successfully!")
+        return True
+        
+    except Exception as e:
+        current_app.logger.error(f"Sample data creation error: {e}")
+        db.session.rollback()
+        return False
+
+def validate_price(price):
+    """Validate price input"""
+    try:
+        price = float(price)
+        return price >= 0
+    except (ValueError, TypeError):
+        return False
+
+def validate_quantity(quantity):
+    """Validate quantity input"""
+    try:
+        quantity = int(quantity)
+        return 0 <= quantity <= 10000
+    except (ValueError, TypeError):
+        return False
+
+def clean_html(text):
+    """Clean HTML content using bleach"""
+    if not text:
+        return ""
     
-    for cat_data in categories_data:
-        category = Category.query.filter_by(name=cat_data['name']).first()
-        if not category:
-            category = Category(**cat_data)
-            db.session.add(category)
+    allowed_tags = ['p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li']
+    allowed_attributes = {}
     
-    db.session.commit()
-    
-    # Create your 5 specific products with images
-    products_data = [
-        {
-            'name': 'Cotton Print Kurti',
-            'description': 'Comfortable cotton kurti perfect for daily wear. Features beautiful prints and breathable fabric for all-day comfort.',
-            'price': 899.0,
-            'original_price': 1299.0,
-            'stock_quantity': 25,
-            'sizes': 'S, M, L, XL, XXL',
-            'colors': 'White, Blue, Pink, Yellow',
-            'material': 'Pure Cotton',
-            'care_instructions': 'Machine wash cold, tumble dry low',
-            'image_url': 'cotton_print_kurti.jpg',
-            'is_new_arrival': True,
-            'is_featured': True,
-            'is_on_sale': True
-        },
-        {
-            'name': 'Designer Silk Saree',
-            'description': 'Premium silk saree with intricate border work. Perfect for weddings and special occasions.',
-            'price': 5999.0,
-            'original_price': 7999.0,
-            'stock_quantity': 8,
-            'sizes': 'One Size',
-            'colors': 'Red, Maroon, Navy Blue, Golden',
-            'material': 'Pure Silk',
-            'care_instructions': 'Dry clean only',
-            'image_url': 'designer_silk_saree.jpg',
-            'is_featured': True,
-            'is_best_seller': True,
-            'is_on_sale': True
-        },
-        {
-            'name': 'Elegant Pink Anarkali',
-            'description': 'Beautiful pink anarkali with gold work and embellishments. Stunning outfit for festive occasions.',
-            'price': 2999.0,
-            'original_price': 3499.0,
-            'stock_quantity': 12,
-            'sizes': 'S, M, L, XL',
-            'colors': 'Pink, Rose Gold, Peach',
-            'material': 'Georgette with Embroidery',
-            'care_instructions': 'Dry clean recommended',
-            'image_url': 'elegant_pink_anarkali.jpg',
-            'is_new_arrival': True,
-            'is_featured': True,
-            'is_best_seller': True
-        },
-        {
-            'name': 'Floral Print Anarkali',
-            'description': 'Light and comfortable floral anarkali perfect for casual and semi-formal occasions.',
-            'price': 1999.0,
-            'original_price': 2499.0,
-            'stock_quantity': 18,
-            'sizes': 'S, M, L, XL',
-            'colors': 'White, Pink, Green, Blue',
-            'material': 'Cotton Blend',
-            'care_instructions': 'Machine wash gentle cycle',
-            'image_url': 'floral_print_anarkali.jpg',
-            'is_new_arrival': True,
-            'is_on_sale': True
-        },
-        {
-            'name': 'Royal Blue Lehenga',
-            'description': 'Stunning royal blue lehenga with gold work. Perfect for weddings, receptions, and grand celebrations.',
-            'price': 8999.0,
-            'original_price': 12999.0,
-            'stock_quantity': 6,
-            'sizes': 'S, M, L, XL',
-            'colors': 'Royal Blue, Navy Blue, Midnight Blue',
-            'material': 'Silk with Heavy Embroidery',
-            'care_instructions': 'Dry clean only, store in garment bag',
-            'image_url': 'royal_blue_lehenga.jpg',
-            'is_featured': True,
-            'is_best_seller': True,
-            'is_on_sale': True
-        }
-    ]
-    
-    # Get categories for assignment
-    anarkali_category = Category.query.filter_by(name='Anarkali Suits').first()
-    saree_category = Category.query.filter_by(name='Sarees').first()
-    kurti_category = Category.query.filter_by(name='Kurtis').first()
-    lehenga_category = Category.query.filter_by(name='Lehenga').first()
-    new_arrivals_category = Category.query.filter_by(name='New Arrivals').first()
-    best_sellers_category = Category.query.filter_by(name='Best Sellers').first()
-    sale_category = Category.query.filter_by(name='Sale').first()
-    
-    for prod_data in products_data:
-        product = Product.query.filter_by(name=prod_data['name']).first()
-        if not product:
-            product = Product(**prod_data)
-            product.sku = f"DD{secrets.token_hex(4).upper()}"
-            db.session.add(product)
-            db.session.flush()  # Get the product ID
-            
-            # Assign categories based on product type
-            if 'Anarkali' in product.name:
-                if anarkali_category:
-                    product.categories.append(anarkali_category)
-            elif 'Saree' in product.name:
-                if saree_category:
-                    product.categories.append(saree_category)
-            elif 'Kurti' in product.name:
-                if kurti_category:
-                    product.categories.append(kurti_category)
-            elif 'Lehenga' in product.name:
-                if lehenga_category:
-                    product.categories.append(lehenga_category)
-            
-            # Assign additional categories based on flags
-            if product.is_new_arrival and new_arrivals_category:
-                product.categories.append(new_arrivals_category)
-            if product.is_best_seller and best_sellers_category:
-                product.categories.append(best_sellers_category)
-            if product.is_on_sale and sale_category:
-                product.categories.append(sale_category)
-    
-    db.session.commit()
-    print("Your 5 Dream & Drape products created successfully!")
+    return bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=True)
 
 def init_payment_gateways():
-    """Initialize payment gateway configurations"""
-    payment_config = {
-        'razorpay': {
-            'key_id': current_app.config.get('RAZORPAY_KEY_ID'),
-            'key_secret': current_app.config.get('RAZORPAY_KEY_SECRET')
-        },
-        'stripe': {
-            'public_key': current_app.config.get('STRIPE_PUBLIC_KEY'),
-            'secret_key': current_app.config.get('STRIPE_SECRET_KEY')
+    """Initialize payment gateway configurations with validation"""
+    try:
+        payment_config = {
+            'razorpay': {
+                'key_id': current_app.config.get('RAZORPAY_KEY_ID'),
+                'key_secret': current_app.config.get('RAZORPAY_KEY_SECRET')
+            },
+            'stripe': {
+                'public_key': current_app.config.get('STRIPE_PUBLIC_KEY'),
+                'secret_key': current_app.config.get('STRIPE_SECRET_KEY')
+            }
         }
-    }
-    return payment_config
+        
+        # Validate configuration
+        for gateway, config in payment_config.items():
+            if not all(config.values()):
+                current_app.logger.warning(f"{gateway} configuration incomplete")
+        
+        return payment_config
+    except Exception as e:
+        current_app.logger.error(f"Payment gateway initialization error: {e}")
+        return {}
+
+def generate_secure_token():
+    """Generate cryptographically secure token"""
+    return secrets.token_urlsafe(32)
+
+def mask_sensitive_data(data, mask_char='*'):
+    """Mask sensitive data for logging"""
+    if not data or len(data) <= 4:
+        return mask_char * len(data) if data else ""
+    
+    return data[:2] + mask_char * (len(data) - 4) + data[-2:]
